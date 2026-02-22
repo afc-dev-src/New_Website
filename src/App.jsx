@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import ScrollManager from './components/ScrollManager'
@@ -15,6 +16,7 @@ import FinancialStatement from './pages/FinancialStatement'
 import FAQs from './pages/FAQs'
 import ApplicationForm from './pages/ApplicationForm'
 import Contact from './pages/Contact'
+import BranchLocator from './pages/BranchLocator'
 
 function AppContent() {
   const location = useLocation()
@@ -41,20 +43,23 @@ function AppContent() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <ScrollManager />
-      <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/financial-statement" element={<FinancialStatement />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/properties" element={<Properties />} />
-          <Route path="/calculator" element={<Calculator />} />
-          <Route path="/disclosures" element={<Disclosures />} />
-          <Route path="/faqs" element={<FAQs />} />
-          <Route path="/application-form" element={<ApplicationForm />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-      </main>
+      <ErrorBoundary>
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/financial-statement" element={<FinancialStatement />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/properties" element={<Properties />} />
+            <Route path="/calculator" element={<Calculator />} />
+            <Route path="/disclosures" element={<Disclosures />} />
+            <Route path="/faqs" element={<FAQs />} />
+            <Route path="/application-form" element={<ApplicationForm />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/branches" element={<BranchLocator />} />
+          </Routes>
+        </main>
+      </ErrorBoundary>
       <Footer />
     </div>
   )

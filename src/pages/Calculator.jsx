@@ -16,10 +16,10 @@ const formatMoney = (value) => {
 }
 
 const computeMonthlyPayment = (principal, months, monthlyRate) => {
-  if (months <= 0) return 0
-  const principalPerMonth = principal / months
-  const monthlyInterest = principal * monthlyRate
-  return principalPerMonth + monthlyInterest
+  if (months <= 0 || monthlyRate === 0) return principal / months
+  const numerator = monthlyRate * Math.pow(1 + monthlyRate, months)
+  const denominator = Math.pow(1 + monthlyRate, months) - 1
+  return principal * (numerator / denominator)
 }
 
 export default function Calculator() {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import mainLogo from '../Images/main logo.png'
+import { TIMINGS, CONTACT_INFO, REGULATORY_INFO } from '../constants'
 
 const companyItems = [
   { label: 'About', href: '/about' },
@@ -37,7 +38,7 @@ function Chevron({ open }) {
   )
 }
 
-function DesktopDropdown({ label, items, active }) {
+function DesktopDropdown({ label, items, active, navDelay = '0ms' }) {
   const [open, setOpen] = useState(false)
   const openTimerRef = useRef(null)
   const closeTimerRef = useRef(null)
@@ -53,14 +54,14 @@ function DesktopDropdown({ label, items, active }) {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
     openTimerRef.current = setTimeout(() => {
       setOpen(true)
-    }, 140)
+    }, TIMINGS.DROPDOWN_OPEN_DELAY)
   }
 
   const handleMouseLeave = () => {
     if (openTimerRef.current) clearTimeout(openTimerRef.current)
     closeTimerRef.current = setTimeout(() => {
       setOpen(false)
-    }, 220)
+    }, TIMINGS.DROPDOWN_CLOSE_DELAY)
   }
 
   return (
@@ -75,7 +76,8 @@ function DesktopDropdown({ label, items, active }) {
           if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
           setOpen((prev) => !prev)
         }}
-        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
+        style={{ '--nav-drop-delay': navDelay }}
+        className={`nav-drop-start px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
           active ? 'text-red-600 bg-red-50' : 'text-[#1a1f4e] hover:text-red-600'
         }`}
         type="button"
@@ -141,24 +143,32 @@ export default function Header() {
   }, [location.pathname, location.hash])
 
   useEffect(() => {
+    let ticking = false
     const onScroll = () => {
-      const currentY = window.scrollY
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY
 
-      if (mobileMenuOpen) {
-        setHeaderVisible(true)
-        lastScrollYRef.current = currentY
-        return
+          if (mobileMenuOpen) {
+            setHeaderVisible(true)
+            lastScrollYRef.current = currentY
+            ticking = false
+            return
+          }
+
+          if (currentY <= 10) {
+            setHeaderVisible(true)
+          } else if (currentY > lastScrollYRef.current && currentY > 90) {
+            setHeaderVisible(false)
+          } else if (currentY < lastScrollYRef.current) {
+            setHeaderVisible(true)
+          }
+
+          lastScrollYRef.current = currentY
+          ticking = false
+        })
+        ticking = true
       }
-
-      if (currentY <= 10) {
-        setHeaderVisible(true)
-      } else if (currentY > lastScrollYRef.current && currentY > 90) {
-        setHeaderVisible(false)
-      } else if (currentY < lastScrollYRef.current) {
-        setHeaderVisible(true)
-      }
-
-      lastScrollYRef.current = currentY
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -170,6 +180,7 @@ export default function Header() {
   const isProducts = location.pathname === '/products'
   const isResources = ['/calculator', '/faqs', '/application-form'].includes(location.pathname)
   const isProperties = location.pathname === '/properties'
+  const isBranches = location.pathname === '/branches'
   const isContact = location.pathname === '/contact'
 
   return (
@@ -182,52 +193,65 @@ export default function Header() {
         <div className="hidden lg:block bg-[#1a1f4e] text-white/80">
           <div className="max-w-7xl mx-auto px-6 h-10 flex items-center justify-between text-xs">
             <div className="flex items-center gap-4 sm:gap-6">
-              <a href="mailto:info@afcfinance.com" className="hover:text-white transition-colors">
-                customersupport@afcsme.com.ph
+              <a href={`mailto:${CONTACT_INFO.EMAIL}`} className="hover:text-white transition-colors">
+                {CONTACT_INFO.EMAIL}
               </a>
-              <a href="tel:+6309000000000" className="hover:text-white transition-colors">
-                +63 (9) 178215815
+              <a href={`tel:${CONTACT_INFO.PHONE}`} className="hover:text-white transition-colors">
+                {CONTACT_INFO.PHONE}
               </a>
             </div>
-            <p className="text-white/70">SEC Registered</p>
+            <p className="text-white/70">
+              SEC Reg No. {REGULATORY_INFO.SEC_REGISTRATION_NO} | CAO No. {REGULATORY_INFO.CERTIFICATE_OF_AUTHORITY_NO}
+            </p>
           </div>
         </div>
       )}
 
       <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center shrink-0">
-          <img src={mainLogo} alt="AFC SME Finance" className="h-12 md:h-14 w-auto object-contain" />
+          <img src={mainLogo} alt="AFC SME Finance" loading="lazy" className="logo-pulse-on-check h-12 md:h-14 w-auto object-contain" />
         </Link>
 
         <div className="hidden lg:flex items-center justify-between flex-1 gap-4 min-w-0">
           <div className="flex items-center gap-1 px-2 py-1.5">
             <Link
               to="/"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              style={{ '--nav-drop-delay': '20ms' }}
+              className={`nav-drop-start px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isHome ? 'text-red-600 bg-red-50' : 'text-[#1a1f4e] hover:text-red-600'
               }`}
             >
               Home
             </Link>
 
-            <DesktopDropdown label="Company" items={companyItems} active={isCompany} />
-            <DesktopDropdown label="Products" items={productItems} active={isProducts} />
-            <DesktopDropdown label="Resources" items={resourceItems} active={isResources} />
-            <DesktopDropdown label="Properties" items={propertyItems} active={isProperties} />
-
+            <DesktopDropdown label="Company" items={companyItems} active={isCompany} navDelay="60ms" />
+            <DesktopDropdown label="Products" items={productItems} active={isProducts} navDelay="100ms" />
+            <DesktopDropdown label="Resources" items={resourceItems} active={isResources} navDelay="140ms" />
+            <DesktopDropdown label="Properties" items={propertyItems} active={isProperties} navDelay="180ms" />
             <Link
               to="/contact"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              style={{ '--nav-drop-delay': '220ms' }}
+              className={`nav-drop-start px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 isContact ? 'text-red-600 bg-red-50' : 'text-[#1a1f4e] hover:text-red-600'
               }`}
             >
               Contact Us
             </Link>
+            <Link
+              to="/branches"
+              style={{ '--nav-drop-delay': '260ms' }}
+              className={`nav-drop-start px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                isBranches ? 'text-red-600 bg-red-50' : 'text-[#1a1f4e] hover:text-red-600'
+              }`}
+            >
+              Branch Locator
+            </Link>
           </div>
 
           <Link
             to="/application-form"
-            className="hidden xl:inline-flex items-center justify-center whitespace-nowrap bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-7 py-3 rounded-xl shadow-sm"
+            style={{ '--nav-drop-delay': '300ms' }}
+            className="nav-drop-start hidden xl:inline-flex items-center justify-center whitespace-nowrap bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-7 py-3 rounded-xl shadow-sm"
           >
             Apply / Inquire Now
           </Link>
@@ -272,8 +296,19 @@ export default function Header() {
           <MobileSection title="Products" items={productItems} onNavigate={() => setMobileMenuOpen(false)} />
           <MobileSection title="Resources" items={resourceItems} onNavigate={() => setMobileMenuOpen(false)} />
           <MobileSection title="Properties" items={propertyItems} onNavigate={() => setMobileMenuOpen(false)} />
-          <Link to="/contact" className={`block py-2 text-sm font-medium ${isContact ? 'text-red-600' : 'text-[#1a1f4e]'}`}>
+          <Link
+            to="/contact"
+            className={`block py-2 text-sm font-medium whitespace-nowrap ${isContact ? 'text-red-600' : 'text-[#1a1f4e]'}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Contact Us
+          </Link>
+          <Link
+            to="/branches"
+            className={`block py-2 text-sm font-medium whitespace-nowrap ${isBranches ? 'text-red-600' : 'text-[#1a1f4e]'}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Branch Locator
           </Link>
           <Link
             to="/application-form"

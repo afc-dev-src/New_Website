@@ -65,10 +65,13 @@ export default function HeroSlider() {
   }
 
   const handleTouchStart = (e) => {
-    setTouchStart(e.targetTouches[0].clientX)
+    if (e.targetTouches?.length > 0) {
+      setTouchStart(e.targetTouches[0].clientX)
+    }
   }
 
   const handleTouchEnd = (e) => {
+    if (!touchStart || !e.changedTouches?.length) return
     const distance = touchStart - e.changedTouches[0].clientX
     if (distance > 50) nextSlide()
     if (distance < -50) prevSlide()
@@ -77,7 +80,7 @@ export default function HeroSlider() {
   return (
     <div
       ref={containerRef}
-      className="relative h-[500px] md:h-[600px] overflow-hidden"
+      className="relative h-[540px] md:h-[640px] lg:h-[700px] overflow-hidden"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -90,7 +93,9 @@ export default function HeroSlider() {
         {slides.map((s) => (
           <div key={s.id} className="relative min-w-full h-full">
             <div
-              className="absolute inset-0"
+              className={`absolute inset-0 transition-transform duration-[2800ms] ease-out ${
+                current === s.id - 1 ? 'scale-105' : 'scale-100'
+              }`}
               style={{
                 backgroundImage: `url(${s.image})`,
                 backgroundSize: 'cover',
@@ -98,31 +103,31 @@ export default function HeroSlider() {
                 backgroundRepeat: 'no-repeat',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1a1f4e]/95 via-[#1a1f4e]/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1a1f4e]/70 via-[#1a1f4e]/35 to-transparent" />
 
-            <div className="relative z-10 h-full flex items-center">
+            <div className="relative z-10 h-full flex items-end pb-16 md:pb-20">
               <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl">
-                  <p className="inline-block text-red-400 text-sm font-semibold tracking-wider uppercase mb-4">
+                <div className="max-w-2xl p-2 md:p-4">
+                  <p className="inline-block text-red-300 text-sm font-semibold tracking-wider uppercase mb-3">
                     {s.eyebrow}
                   </p>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                     {s.title}
                   </h1>
-                  <p className="text-lg md:text-xl text-white/80 mb-4 leading-relaxed">{s.subtitle}</p>
-                  <p className="text-base md:text-lg text-white/70 mb-8 leading-relaxed max-w-xl">
+                  <p className="text-lg md:text-xl text-white/95 mb-3 leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">{s.subtitle}</p>
+                  <p className="text-base md:text-lg text-white/90 mb-7 leading-relaxed max-w-xl drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]">
                     {s.description}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <Link
                       to={s.inquireHref}
-                      className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-semibold text-base px-8 py-4 rounded-xl shadow-lg shadow-red-600/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-center"
+                      className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-semibold text-base px-8 py-4 rounded-xl shadow-lg shadow-red-600/35 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-center"
                     >
                       Inquire Now
                     </Link>
                     <Link
                       to={s.learnMoreHref}
-                      className="border border-white/40 text-white hover:bg-white hover:text-[#1a1f4e] hover:border-white font-semibold text-base px-8 py-4 rounded-xl w-full sm:w-auto hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 text-center"
+                      className="border border-white/45 text-white hover:bg-white hover:text-[#1a1f4e] hover:border-white font-semibold text-base px-8 py-4 rounded-xl w-full sm:w-auto hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 text-center"
                     >
                       Learn More
                     </Link>

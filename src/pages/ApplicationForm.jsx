@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 // Placeholder email function
 function sendEmailNotification(formData) {
-  console.log('Application submitted:', formData)
   return { success: true, message: 'Your application has been received.' }
 }
 
 export default function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const timeoutRef = useRef(null)
   const [formData, setFormData] = useState({
     // Personal Info
     fullName: '',
@@ -42,6 +43,12 @@ export default function ApplicationForm() {
       [name]: type === 'checkbox' ? checked : value,
     }))
   }
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const validateStep = (step) => {
     const newErrors = {}
@@ -78,10 +85,14 @@ export default function ApplicationForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validateStep(4)) return
+    if (!validateStep(4) || isLoading) return
+
+    setIsLoading(true)
     const result = sendEmailNotification(formData)
     if (result.success) {
       setSubmitted(true)
+    } else {
+      setIsLoading(false)
     }
   }
 
@@ -364,9 +375,10 @@ export default function ApplicationForm() {
                 ) : (
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition font-bold"
+                    disabled={isLoading}
+                    className="px-6 py-2 bg-red-500 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded hover:bg-red-600 transition font-bold"
                   >
-                    Submit Application
+                    {isLoading ? 'Submitting...' : 'Submit Application'}
                   </button>
                 )}
               </div>

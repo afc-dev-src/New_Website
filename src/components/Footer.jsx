@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import mainLogo from '../Images/logo.png'
+import { CONTACT_INFO, REGULATORY_INFO } from '../constants'
 
 export default function Footer() {
   return (
@@ -6,11 +8,15 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
-            <h3 className="text-white font-bold text-lg">AFC SME Finance Inc.</h3>
+            <Link to="/" className="inline-flex items-center">
+              <img src={mainLogo} alt="AFC SME Finance" loading="lazy" className="logo-pulse-on-check h-18 w-auto object-contain" />
+            </Link>
             <p className="text-white/60 text-sm mt-3 leading-relaxed">
-              SEC-registered financing company focused on practical lending solutions for SMEs and property buyers.
+              SEC-registered. Focused on practical lending solutions for SMEs and property buyers.
             </p>
-            <p className="text-white/40 text-xs mt-4 italic">Certificate of Authority to Operate</p>
+            <p className="text-white/40 text-xs mt-4 italic">
+              SEC Registration No. {REGULATORY_INFO.SEC_REGISTRATION_NO} | Certificate of Authority No. {REGULATORY_INFO.CERTIFICATE_OF_AUTHORITY_NO}
+            </p>
           </div>
 
           <div>
@@ -63,9 +69,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li>Unit 309 3F AIC Gold Tower, Emerald Avenue cor. Garnet Road, Ortigas, Pasig City</li>
-              <li>+63 (9) 178215815</li>
-              <li>customersupport@afcsme.com.ph</li>
+              <li>{CONTACT_INFO.OFFICE_ADDRESS}</li>
+              <li>{CONTACT_INFO.PHONE}</li>
+              <li>{CONTACT_INFO.EMAIL}</li>
               <li className="pt-2">
                 <Link to="/application-form" className="inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold">
                   Apply Now

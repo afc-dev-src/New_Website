@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 function sendEmailNotification(formData) {
-  console.log('Email notification sent:', formData)
   return { success: true, message: 'Your inquiry has been logged.' }
 }
 
@@ -17,12 +16,20 @@ export default function InquiryForm() {
   })
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
+  const timeoutRef = useRef(null)
 
   const products = [
     'Real Estate Mortgage',
     'Real Estate Takeout',
     'Acquisition Loan',
   ]
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const validate = () => {
     const newErrors = {}
@@ -47,8 +54,9 @@ export default function InquiryForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validate()) return
+    if (!validate() || isLoading) return
 
+    setIsLoading(true)
     const result = sendEmailNotification(formData)
     if (result.success) {
       setSubmitted(true)
@@ -61,7 +69,12 @@ export default function InquiryForm() {
         message: '',
         consent: false,
       })
-      setTimeout(() => setSubmitted(false), 5000)
+      timeoutRef.current = setTimeout(() => {
+        setSubmitted(false)
+        setIsLoading(false)
+      }, 5000)
+    } else {
+      setIsLoading(false)
     }
   }
 
@@ -223,9 +236,10 @@ export default function InquiryForm() {
 
                 <button
                   type="submit"
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-base font-semibold rounded-lg w-full md:w-auto"
+                  disabled={isLoading}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white px-8 py-3 text-base font-semibold rounded-lg w-full md:w-auto transition"
                 >
-                  Submit Inquiry
+                  {isLoading ? 'Submitting...' : 'Submit Inquiry'}
                 </button>
               </form>
             </div>

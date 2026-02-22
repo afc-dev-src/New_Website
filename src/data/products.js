@@ -1,6 +1,6 @@
-import remImage from '../Images/RENm.jpg'
-import takeoutImage from '../Images/takeout.jpg'
-import acquisitionImage from '../Images/acqui.jpg'
+import remImage from '../Images/RENm1.jpg'
+import takeoutImage from '../Images/takeout1.jpg'
+import acquisitionImage from '../Images/acqui1.jpg'
 import productREM from '../Images/our_products_REM.png'
 import productRET from '../Images/our_products_RET.png'
 import productREA from '../Images/our_products_REA.png'
@@ -13,10 +13,10 @@ export const homeProductExplorer = [
     href: '/products#product-mortgage',
     thumbImage: productREM,
     sectionBgImage: remImage,
-    hoverDetails: [
-      'Copy of title (TCT/CCT)',
-      'Latest tax declaration and tax clearance',
-      'Two valid IDs of borrower and co-borrower',
+    whatFor: [
+      'Loan approval in 1 - 2 weeks',
+      '0.9% interest rate',
+      'Up to 60 months loan term',
     ],
   },
   {
@@ -26,10 +26,11 @@ export const homeProductExplorer = [
     href: '/products#product-takeout',
     thumbImage: productRET,
     sectionBgImage: takeoutImage,
-    hoverDetails: [
-      'Copy of title (TCT/CCT)',
-      'Latest SOA from bank or financing company',
-      'Source of income documents',
+    whatFor: [
+      'Loan approval in 1 - 2 weeks',
+      'Maximum approval up to 70% of appraisal value',
+      '0.9% interest rate',
+      'Up to 60 months loan term',
     ],
   },
   {
@@ -39,10 +40,11 @@ export const homeProductExplorer = [
     href: '/products#product-acquisition',
     thumbImage: productREA,
     sectionBgImage: acquisitionImage,
-    hoverDetails: [
-      'Copy of title (TCT/CCT)',
-      'Latest real estate tax receipt and clearance',
-      'Application form and source of income',
+    whatFor: [
+      'Loan pre-approval in 1 - 2 days',
+      'Maximum approval up to 80% of appraisal value',
+      '0.9% interest rate',
+      'Up to 84 months loan term',
     ],
   },
 ]

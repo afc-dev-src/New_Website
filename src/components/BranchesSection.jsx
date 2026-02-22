@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { branches } from '../data/branches'
 
-export default function BranchesSection({ compact = false }) {
+export default function BranchesSection({ compact = false, sectionId = 'branches' }) {
+  if (!branches || branches.length === 0) {
+    return null
+  }
+
   const [selectedBranchId, setSelectedBranchId] = useState(branches[0]?.id)
 
   const selectedBranch = useMemo(
@@ -10,14 +14,12 @@ export default function BranchesSection({ compact = false }) {
   )
 
   return (
-    <section className="section-fade-in section-surface py-16 md:py-20" data-reveal>
+    <section id={sectionId} className="section-fade-in py-16 md:py-20 bg-[#f5f7ff]" data-reveal>
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-10">
           <p className="text-red-600 text-sm font-semibold tracking-wider uppercase mb-3">Our Branches</p>
           <h2 className="text-3xl md:text-4xl font-bold text-[#1a1f4e]">Connect With the Nearest Team</h2>
-          <p className="text-[#1a1f4e]/70 mt-4">
-            Branch details below are placeholders and can be replaced with final official office data anytime.
-          </p>
+          <p className="text-[#1a1f4e]/70 mt-4">Ortigas is the official Head Office of AFC SME Finance.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -34,7 +36,14 @@ export default function BranchesSection({ compact = false }) {
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-[#1a1f4e]">{branch.name}</h3>
-                    <p className="text-xs uppercase tracking-wider text-red-600 font-semibold mt-1">{branch.pinLabel}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-xs uppercase tracking-wider text-red-600 font-semibold">{branch.pinLabel}</p>
+                      {branch.isHeadOffice && (
+                        <span className="text-[11px] font-bold uppercase bg-[#1a1f4e] text-white px-2 py-0.5 rounded-full">
+                          Head Office
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -53,12 +62,16 @@ export default function BranchesSection({ compact = false }) {
                   <li>
                     <span className="font-semibold text-[#1a1f4e]">Pin:</span> {branch.address}
                   </li>
-                  <li>
-                    <span className="font-semibold text-[#1a1f4e]">Telephone:</span> {branch.telephone}
-                  </li>
-                  <li>
-                    <span className="font-semibold text-[#1a1f4e]">Phone:</span> {branch.mobile}
-                  </li>
+                  {branch.telephone && (
+                    <li>
+                      <span className="font-semibold text-[#1a1f4e]">Telephone:</span> {branch.telephone}
+                    </li>
+                  )}
+                  {branch.mobile && (
+                    <li>
+                      <span className="font-semibold text-[#1a1f4e]">Phone:</span> {branch.mobile}
+                    </li>
+                  )}
                   <li>
                     <span className="font-semibold text-[#1a1f4e]">Email:</span>{' '}
                     <a href={`mailto:${branch.email}`} className="text-red-600 hover:text-red-700">

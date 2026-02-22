@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 export default function ScrollManager() {
+  const location = useLocation()
+
   useEffect(() => {
     const items = Array.from(document.querySelectorAll('[data-reveal]'))
     if (!items.length) return undefined
@@ -19,7 +22,7 @@ export default function ScrollManager() {
 
     items.forEach((item) => observer.observe(item))
     return () => observer.disconnect()
-  }, [])
+  }, [location.pathname, location.hash])
 
   return null
 }
