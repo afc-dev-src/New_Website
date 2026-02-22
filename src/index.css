@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-duration-fast: 220ms;
+  --motion-duration-base: 520ms;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: #1a1f4e;
+  background: #ffffff;
+  line-height: 1.5;
+}
+
+[id] {
+  scroll-margin-top: 6rem;
+}
+
+button, a {
+  transition: all 150ms ease;
+}
+
+.section-fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition-property: opacity, transform;
+  transition-duration: var(--motion-duration-base);
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.section-fade-in.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-surface {
+  position: relative;
+  isolation: isolate;
+}
+
+.section-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.section-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(244, 247, 255, 0.88));
+}
+
+.section-bg-rem::before {
+  background-image: url('./Images/RENm.jpg');
+}
+
+.section-bg-takeout::before {
+  background-image: url('./Images/takeout.jpg');
+}
+
+.section-bg-acquisition::before {
+  background-image: url('./Images/acqui.jpg');
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .section-fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
