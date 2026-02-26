@@ -15,6 +15,7 @@ const productSections = [
     processBg: 'bg-gray-50',
     who: [
       'Loan approval in 1 – 2 weeks',
+      'Maximum approval up to 70% of the appraisal value',
       '0.9% interest rate ',
       'Up to 60 months loan term ',
     ],
@@ -100,10 +101,14 @@ const productSections = [
 export default function Products() {
   return (
     <div>
-      <section className="py-16 bg-navy text-white">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      <section className="relative overflow-hidden py-16 text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(130deg,#0d143d_0%,#1a1f4e_45%,#304a9b_100%)]" />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Products</h1>
-          <p className="text-xl text-gray-300">Real estate loans for your business financing needs</p>
+          <p className="text-xl text-white/85">Real estate loans for your business financing needs</p>
         </div>
       </section>
 

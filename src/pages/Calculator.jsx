@@ -16,10 +16,8 @@ const formatMoney = (value) => {
 }
 
 const computeMonthlyPayment = (principal, months, monthlyRate) => {
-  if (months <= 0 || monthlyRate === 0) return principal / months
-  const numerator = monthlyRate * Math.pow(1 + monthlyRate, months)
-  const denominator = Math.pow(1 + monthlyRate, months) - 1
-  return principal * (numerator / denominator)
+  if (months <= 0 || monthlyRate < 0) return 0
+  return ((principal * monthlyRate * months) + principal) / months
 }
 
 export default function Calculator() {
@@ -57,10 +55,14 @@ export default function Calculator() {
 
   return (
     <div>
-      <section className="py-12 bg-navy text-white">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      <section className="relative overflow-hidden py-12 md:py-16 text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(130deg,#0d143d_0%,#1a1f4e_45%,#304a9b_100%)]" />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Loan Calculator</h1>
-          <p className="text-xl text-gray-300">Estimate your monthly payments and total repayment</p>
+          <p className="text-xl text-white/85">Estimate your monthly payments and total repayment</p>
         </div>
       </section>
 

@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PropertyCard from '../components/PropertyCard'
 import { properties as allProperties } from '../data/properties'
+import { api } from '../services/api'
 
 export default function Properties() {
+  const [properties, setProperties] = useState(allProperties)
   const [filters, setFilters] = useState({
     location: '',
     type: '',
@@ -10,10 +12,26 @@ export default function Properties() {
     status: 'all',
   })
 
-  const locations = [...new Set(allProperties.map((p) => p.location))]
-  const types = [...new Set(allProperties.map((p) => p.type))]
+  useEffect(() => {
+    let ignore = false
+    api.getProperties()
+      .then((result) => {
+        if (!ignore && Array.isArray(result.items) && result.items.length > 0) {
+          setProperties(result.items)
+        }
+      })
+      .catch(() => {
+        // Keep local fallback data for resilience.
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
 
-  const filteredProperties = allProperties.filter((p) => {
+  const locations = [...new Set(properties.map((p) => p.location))]
+  const types = [...new Set(properties.map((p) => p.type))]
+
+  const filteredProperties = properties.filter((p) => {
     if (filters.location && p.location !== filters.location) return false
     if (filters.type && p.type !== filters.type) return false
     if (filters.priceRange !== 'all') {
@@ -32,10 +50,14 @@ export default function Properties() {
   return (
     <div>
       {/* Hero */}
-      <section className="py-12 bg-navy text-white">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      <section className="relative overflow-hidden py-12 md:py-16 text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(130deg,#0d143d_0%,#1a1f4e_45%,#304a9b_100%)]" />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Foreclosed Properties</h1>
-          <p className="text-xl text-gray-300">Browse our portfolio of available real estate opportunities</p>
+          <p className="text-xl text-white/85">Browse our portfolio of available real estate opportunities</p>
         </div>
       </section>
 
@@ -115,7 +137,7 @@ export default function Properties() {
           {/* Results Count */}
           <p className="text-gray-600 mb-6">
             Showing <span className="font-bold">{filteredProperties.length}</span> of{' '}
-            <span className="font-bold">{allProperties.length}</span> properties
+            <span className="font-bold">{properties.length}</span> properties
           </p>
 
           {/* Property Grid */}

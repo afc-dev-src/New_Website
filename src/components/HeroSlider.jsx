@@ -1,13 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import remImage from '../Images/RENm.jpg'
-import takeoutImage from '../Images/takeout.jpg'
-import acquisitionImage from '../Images/acqui.jpg'
+import { useState, useEffect } from 'react'
+import remImage from '../Images/1.png'
+import takeoutImage from '../Images/2.png'
+import acquisitionImage from '../Images/3.png'
 
 const slides = [
   {
     id: 1,
-    eyebrow: 'AFC SME Finance',
+    eyebrow: 'Built on Your Asset',
     title: 'Real Estate Mortgage',
     subtitle: 'Secure practical financing built for property buyers and growing SMEs.',
     description: 'Flexible terms and faster evaluations for residential and commercial financing.',
@@ -17,10 +16,10 @@ const slides = [
   },
   {
     id: 2,
-    eyebrow: 'Tailored Refinance',
+    eyebrow: 'Refinance with Clarity',
     title: 'Real Estate Takeout',
-    subtitle: 'Move your existing loan to better terms with a clearer repayment plan.',
-    description: 'Switch to a financing structure that protects cash flow and supports expansion.',
+    subtitle: 'Move your existing loan into a structure that better fits your current needs.',
+    description: 'Clear repayment terms and practical options to improve monthly cash flow.',
     inquireHref: '/#inquiry-form',
     learnMoreHref: '/products#product-takeout',
     image: takeoutImage,
@@ -39,137 +38,32 @@ const slides = [
 
 export default function HeroSlider() {
   const [current, setCurrent] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-  const [touchStart, setTouchStart] = useState(0)
-  const containerRef = useRef(null)
 
-  // Auto-advance slides
   useEffect(() => {
-    if (isPaused) return
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length)
     }, 5000)
     return () => clearInterval(timer)
-  }, [isPaused])
-
-  const goToSlide = (index) => {
-    setCurrent(index)
-  }
-
-  const nextSlide = () => {
-    setCurrent((prev) => (prev + 1) % slides.length)
-  }
-
-  const prevSlide = () => {
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length)
-  }
-
-  const handleTouchStart = (e) => {
-    if (e.targetTouches?.length > 0) {
-      setTouchStart(e.targetTouches[0].clientX)
-    }
-  }
-
-  const handleTouchEnd = (e) => {
-    if (!touchStart || !e.changedTouches?.length) return
-    const distance = touchStart - e.changedTouches[0].clientX
-    if (distance > 50) nextSlide()
-    if (distance < -50) prevSlide()
-  }
+  }, [])
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-[540px] md:h-[640px] lg:h-[700px] overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <section className="relative w-full max-w-[1920px] mx-auto h-[52vh] sm:h-[58vh] md:h-[64vh] lg:h-[70vh] xl:h-[74vh] min-h-[320px] sm:min-h-[380px] md:min-h-[460px] max-h-[880px] overflow-hidden">
       <div
         className="flex h-full w-full transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${current * 100}%)` }}
       >
-        {slides.map((s) => (
-          <div key={s.id} className="relative min-w-full h-full">
-            <div
-              className={`absolute inset-0 transition-transform duration-[2800ms] ease-out ${
-                current === s.id - 1 ? 'scale-105' : 'scale-100'
-              }`}
-              style={{
-                backgroundImage: `url(${s.image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
+        {slides.map((slide) => (
+          <div key={slide.id} className="relative min-w-full h-full">
+            <img
+              src={slide.image}
+              alt={`Hero slide ${slide.id}`}
+              className="w-full h-full object-cover object-center"
+              loading={slide.id === 1 ? 'eager' : 'lazy'}
+              decoding="async"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1a1f4e]/70 via-[#1a1f4e]/35 to-transparent" />
-
-            <div className="relative z-10 h-full flex items-end pb-16 md:pb-20">
-              <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl p-2 md:p-4">
-                  <p className="inline-block text-red-300 text-sm font-semibold tracking-wider uppercase mb-3">
-                    {s.eyebrow}
-                  </p>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {s.title}
-                  </h1>
-                  <p className="text-lg md:text-xl text-white/95 mb-3 leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">{s.subtitle}</p>
-                  <p className="text-base md:text-lg text-white/90 mb-7 leading-relaxed max-w-xl drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]">
-                    {s.description}
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Link
-                      to={s.inquireHref}
-                      className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-semibold text-base px-8 py-4 rounded-xl shadow-lg shadow-red-600/35 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-center"
-                    >
-                      Inquire Now
-                    </Link>
-                    <Link
-                      to={s.learnMoreHref}
-                      className="border border-white/45 text-white hover:bg-white hover:text-[#1a1f4e] hover:border-white font-semibold text-base px-8 py-4 rounded-xl w-full sm:w-auto hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 text-center"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         ))}
       </div>
-
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
-        aria-label="Previous slide"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
-        aria-label="Next slide"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-        {slides.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => goToSlide(idx)}
-            className={`h-2.5 rounded-full transition-all ${
-              idx === current ? 'w-8 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/75'
-            }`}
-            aria-label={`Go to slide ${idx + 1}`}
-          />
-        ))}
-      </div>
-    </div>
+    </section>
   )
 }

@@ -1,74 +1,51 @@
 import { Link } from 'react-router-dom'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import HeroSlider from '../components/HeroSlider'
 import InquiryForm from '../components/InquiryForm'
 import ProductExplorer from '../components/ProductExplorer'
 import { properties as allProperties } from '../data/properties'
 import { homeProductExplorer } from '../data/products'
+import { api } from '../services/api'
+import whyFastProcessingImage from '../Images/WHY-Fast Processing.jpg'
+import whySecureReliableImage from '../Images/WHY- Secure and Reliable.jpg'
+import whyGuidingImage from '../Images/WHY-Guiding.jpg'
+import whyTermsImage from '../Images/WHY-Terms.jpg'
 
 const differentiators = [
   {
-    icon: 'lightning',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
     title: 'Fast Processing',
-    description: 'We keep requirements and assessment efficient so qualified applications move forward sooner.',
+    description: 'Once complete requirements are in, we move quickly and keep you updated.',
+    image: whyFastProcessingImage,
+    imagePosition: 'object-left md:object-center',
   },
   {
-    icon: 'shield',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
     title: 'Secure & Reliable',
-    description: 'Operate with confidence through a compliant, transparent financing process from start to release.',
+    description: 'Your plans deserve a partner you can trust. We keep things clear, secure, and consistent from start to finish.',
+    image: whySecureReliableImage,
+    imagePosition: 'object-right',
   },
   {
-    icon: 'handshake',
-    iconBg: 'bg-[#e8edff]',
-    iconColor: 'text-[#1a1f4e]',
-    title: 'Personalized Service',
-    description: 'Our loan team provides practical guidance tailored to your goals at every stage of the application.',
+    title: 'Step-by-step Guide',
+    description: 'May kausap ka. We walk with you through every step—requirements, processing, and release—so you always know what’s next.',
+    image: whyGuidingImage,
+    imagePosition: 'object-center',
   },
   {
-    icon: 'trending-up',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
-    title: 'Competitive Rates',
-    description: 'Choose from financing options with sensible pricing and flexible terms that fit your budget plan.',
+    title: 'Flexible Terms',
+    description: 'Payment options that work with your cash flow, so you can move forward with confidence.',
+    image: whyTermsImage,
+    imagePosition: 'object-center md:object-right',
   },
 ]
 
-function DifferentiatorIcon({ type, className = '' }) {
-  if (type === 'lightning') {
-    return (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" />
-      </svg>
-    )
-  }
-
-  if (type === 'shield') {
-    return (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" />
-      </svg>
-    )
-  }
-
-  if (type === 'handshake') {
-    return (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12l2 2a2 2 0 002.8 0l1.7-1.7a2 2 0 012.8 0L20 15M4 9l4-3 4 3M2 10l4 4m16-4l-4 4" />
-      </svg>
-    )
-  }
-
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l5-5 4 4 7-7" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 8h6v6" />
-    </svg>
-  )
-}
+const partnerPlaceholders = [
+  { id: 'p1', name: 'Partner 01' },
+  { id: 'p2', name: 'Partner 02' },
+  { id: 'p3', name: 'Partner 03' },
+  { id: 'p4', name: 'Partner 04' },
+  { id: 'p5', name: 'Partner 05' },
+  { id: 'p6', name: 'Partner 06' },
+]
 
 function HouseIcon({ className = '' }) {
   return (
@@ -81,6 +58,32 @@ function HouseIcon({ className = '' }) {
 }
 
 export default function Home() {
+  const [properties, setProperties] = useState(allProperties)
+  const [activePartner, setActivePartner] = useState(0)
+
+  useEffect(() => {
+    let ignore = false
+    api.getProperties()
+      .then((result) => {
+        if (!ignore && Array.isArray(result.items) && result.items.length > 0) {
+          setProperties(result.items)
+        }
+      })
+      .catch(() => {
+        // Keep local fallback data for resilience.
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActivePartner((prev) => (prev + 1) % partnerPlaceholders.length)
+    }, 1800)
+    return () => clearInterval(timer)
+  }, [])
+
   const previewLoanAmount = 1000000
   const previewMonthlyRate = 0.9
   const previewTermMonths = 120
@@ -89,20 +92,13 @@ export default function Home() {
     if (previewLoanAmount <= 0 || previewTermMonths <= 0 || previewMonthlyRate < 0) return null
 
     const monthlyRate = previewMonthlyRate / 100
-    let monthlyPayment
-    if (monthlyRate === 0) {
-      monthlyPayment = previewLoanAmount / previewTermMonths
-    } else {
-      const numerator = monthlyRate * Math.pow(1 + monthlyRate, previewTermMonths)
-      const denominator = Math.pow(1 + monthlyRate, previewTermMonths) - 1
-      monthlyPayment = previewLoanAmount * (numerator / denominator)
-    }
+    const monthlyPayment = ((previewLoanAmount * monthlyRate * previewTermMonths) + previewLoanAmount) / previewTermMonths
     const totalRepayment = monthlyPayment * previewTermMonths
 
     return { monthlyPayment, totalRepayment }
   }, [previewLoanAmount, previewMonthlyRate, previewTermMonths])
 
-  const featuredProperties = allProperties
+  const featuredProperties = properties
     .filter((property) => property.status === 'Available')
     .slice(0, 3)
 
@@ -117,10 +113,7 @@ export default function Home() {
   const getMonthlyAmortization = (amount) => {
     if (amount <= 0 || previewTermMonths <= 0 || previewMonthlyRate < 0) return 0
     const monthlyRate = previewMonthlyRate / 100
-    if (monthlyRate === 0) return amount / previewTermMonths
-    const numerator = monthlyRate * Math.pow(1 + monthlyRate, previewTermMonths)
-    const denominator = Math.pow(1 + monthlyRate, previewTermMonths) - 1
-    return amount * (numerator / denominator)
+    return ((amount * monthlyRate * previewTermMonths) + amount) / previewTermMonths
   }
 
   return (
@@ -128,27 +121,35 @@ export default function Home() {
       <HeroSlider />
       <ProductExplorer />
 
-      <section className="py-10 md:py-12 bg-[#f5f7ff]">
+      <section className="py-8 md:py-10 bg-[#f3f5f9]">
         <div className="w-full max-w-[1279px] mx-auto px-6">
-          <div className="text-center max-w-4xl mx-auto">
-            <p className="text-red-600 text-sm font-semibold tracking-wider uppercase">Why AFC SME</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#1a1f4e] mt-4">Built for Filipino People</h2>
-            <p className="text-[#1a1f4e]/75 text-base md:text-lg mt-4 leading-relaxed">
-              Explore financing options with guidance focused on terms, timelines, and practical fit.
+          <div className="max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1f4e]">WHY CHOOSE AFC SME</h2>
+            <p className="text-[#374151] text-sm md:text-base mt-3 leading-relaxed">
+              We&apos;re here to help you move forward-para sa negosyo, para sa pamilya.
             </p>
           </div>
 
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {differentiators.map((item) => (
               <div
                 key={item.title}
-                className="group rounded-2xl border border-[#dbe3ff] bg-white p-6 shadow-[0_12px_30px_rgba(26,31,78,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(26,31,78,0.14)]"
+                className="overflow-hidden rounded-2xl border border-[#e5e7eb]/80 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.iconBg}`}>
-                  <DifferentiatorIcon type={item.icon} className={`h-6 w-6 ${item.iconColor}`} />
+                <div className="border border-black/5">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className={`h-[120px] md:h-[150px] w-full object-cover ${item.imagePosition} filter contrast-[1.1] saturate-[1.08] brightness-[0.96]`}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-[#1a1f4e] mb-2">{item.title}</h3>
-                <p className="text-[#1a1f4e]/75 text-base leading-relaxed">{item.description}</p>
+                <div className="h-px w-full bg-black/5" />
+                <div className="px-5 py-4">
+                  <h3 className="text-base md:text-lg font-bold uppercase tracking-wide text-[#1a1f4e] mb-2">{item.title}</h3>
+                  <p className="text-[#4b5563] text-sm md:text-base leading-relaxed">{item.description}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -187,6 +188,10 @@ export default function Home() {
                 <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-[#0f1a49] via-[#1a1f4e] to-[#162a6a] p-7 text-white shadow-2xl">
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.24),transparent_46%),radial-gradient(circle_at_bottom_left,rgba(239,68,68,0.2),transparent_44%)]" />
                   <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:28px_28px] opacity-20" />
+                  <div className="pointer-events-none absolute -top-6 -right-5 h-20 w-20 rounded-full border border-cyan-200/40 bg-cyan-300/15" />
+                  <div className="pointer-events-none absolute top-8 left-5 h-7 w-7 rotate-45 rounded-sm border border-white/35 bg-white/10" />
+                  <div className="pointer-events-none absolute bottom-10 left-8 h-0 w-0 border-l-[14px] border-r-[14px] border-b-[22px] border-l-transparent border-r-transparent border-b-red-300/35" />
+                  <div className="pointer-events-none absolute bottom-8 right-10 h-8 w-8 rounded-md border border-red-200/35 bg-red-300/10" />
                   <div className="relative">
                     <h3 className="text-xl font-bold mb-5">Quick Preview</h3>
                     <div className="space-y-3 text-sm md:text-base">
@@ -211,11 +216,57 @@ export default function Home() {
                         {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(calculatorResult.monthlyPayment)}
                       </span>
                     </div>
+                    <p className="mt-2 text-xs text-white/70">
+                      Formula: ((Loan x Monthly Rate x Term) + Loan) / Term
+                    </p>
                     <p className="mt-3 text-xs text-white/60">*Estimate only. Final terms are subject to approval.</p>
                   </div>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10 md:py-12 bg-[linear-gradient(180deg,#f3f6ff_0%,#ffffff_100%)] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto">
+            <p className="text-red-600 text-xs md:text-sm font-semibold tracking-wider uppercase">Our Network</p>
+            <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1a1f4e]">Trusted Partners</h2>
+            <p className="mt-3 text-[#1a1f4e]/70 text-sm md:text-base">
+              Placeholder logos below. Replace these with actual partner brands anytime.
+            </p>
+          </div>
+
+          <div className="relative mt-10 h-[180px] md:h-[210px]">
+            {partnerPlaceholders.map((partner, index) => {
+              const count = partnerPlaceholders.length
+              let offset = (index - activePartner + count) % count
+              if (offset > count / 2) offset -= count
+              const absOffset = Math.abs(offset)
+              const translateX = offset * 170
+              const scale = Math.max(0.74, 1 - absOffset * 0.14)
+              const opacity = Math.max(0.22, 1 - absOffset * 0.22)
+              const zIndex = 20 - absOffset
+
+              return (
+                <div
+                  key={partner.id}
+                  className="absolute left-1/2 top-1/2 w-[170px] md:w-[210px] h-[110px] md:h-[130px] -translate-y-1/2 rounded-2xl border border-[#dbe3ff] bg-white shadow-[0_16px_30px_rgba(26,31,78,0.10)] transition-all duration-700"
+                  style={{
+                    transform: `translateX(${translateX}px) translateY(-50%) scale(${scale})`,
+                    opacity,
+                    zIndex,
+                  }}
+                >
+                  <div className="h-full w-full flex items-center justify-center">
+                    <span className="text-[#1a1f4e]/70 font-semibold text-sm md:text-base tracking-wide">
+                      {partner.name}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -238,46 +289,53 @@ export default function Home() {
           </div>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProperties.map((property, index) => (
-              <div
-                key={property.id}
-                className="overflow-hidden rounded-2xl border border-[#dbe3ff] bg-white/95 shadow-[0_16px_34px_rgba(26,31,78,0.08)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(26,31,78,0.16)]"
-              >
+            {featuredProperties.map((property, index) => {
+              const propertyImage =
+                (Array.isArray(property.imageUrls) && property.imageUrls[0]) ||
+                property.imageUrl ||
+                propertyImages[index % propertyImages.length]
+
+              return (
                 <div
-                  className="relative h-72 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${propertyImages[index % propertyImages.length]})` }}
+                  key={property.id}
+                  className="overflow-hidden rounded-2xl border border-[#dbe3ff] bg-white/95 shadow-[0_16px_34px_rgba(26,31,78,0.08)] group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(26,31,78,0.16)]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1f4e]/45 via-[#1a1f4e]/10 to-transparent" />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="px-3 py-1 rounded-lg bg-green-100 text-green-700 text-sm font-semibold">
-                      {property.status}
-                    </span>
-                    <span className="px-3 py-1 rounded-lg bg-[#1a1f4e] text-white text-sm font-semibold">
-                      {getPropertyCategory(property.type)}
-                    </span>
+                  <div
+                    className="relative h-72 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                    style={{ backgroundImage: `url(${propertyImage})` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1f4e]/45 via-[#1a1f4e]/10 to-transparent" />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span className="px-3 py-1 rounded-lg bg-green-100 text-green-700 text-sm font-semibold">
+                        {property.status}
+                      </span>
+                      <span className="px-3 py-1 rounded-lg bg-[#1a1f4e] text-white text-sm font-semibold">
+                        {getPropertyCategory(property.type)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <p className="inline-flex items-center gap-2 rounded-full bg-[#f5f7ff] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#1a1f4e]/80">
+                      <HouseIcon className="h-4 w-4 text-red-600" />
+                      Property Listing
+                    </p>
+                    <h3 className="text-2xl md:text-3xl font-bold text-[#1a1f4e] leading-tight">{property.name}</h3>
+                    <p className="text-gray-600 text-lg mt-2">{property.location}</p>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-[#1a1f4e]/60">As low as</p>
+                    <p className="text-3xl md:text-4xl font-bold text-red-600 mt-1">
+                      {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(getMonthlyAmortization(property.price))}
+                      <span className="ml-1 text-base font-semibold text-red-500/90">/month</span>
+                    </p>
+                    <p className="text-sm text-[#1a1f4e]/60 mt-2">
+                      Total Price:{' '}
+                      {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(property.price)}
+                    </p>
+                    <p className="text-[11px] text-[#1a1f4e]/50 mt-2">Estimated amortization based on standard sample terms.</p>
                   </div>
                 </div>
-
-                <div className="p-6">
-                  <p className="inline-flex items-center gap-2 rounded-full bg-[#f5f7ff] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#1a1f4e]/80">
-                    <HouseIcon className="h-4 w-4 text-red-600" />
-                    Property Listing
-                  </p>
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#1a1f4e] leading-tight">{property.name}</h3>
-                  <p className="text-gray-600 text-lg mt-2">{property.location}</p>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-[#1a1f4e]/60">As low as</p>
-                  <p className="text-3xl md:text-4xl font-bold text-red-600 mt-1">
-                    {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(getMonthlyAmortization(property.price))}
-                    <span className="ml-1 text-base font-semibold text-red-500/90">/month</span>
-                  </p>
-                  <p className="text-sm text-[#1a1f4e]/60 mt-2">
-                    Total Price:{' '}
-                    {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(property.price)}
-                  </p>
-                  <p className="text-[11px] text-[#1a1f4e]/50 mt-2">Estimated amortization based on standard sample terms.</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="mt-10 text-center">

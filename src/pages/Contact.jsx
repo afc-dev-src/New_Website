@@ -63,10 +63,14 @@ export default function Contact() {
 
   return (
     <div>
-      <section className="section-fade-in py-12 bg-[#1a1f4e]" data-reveal>
-        <div className="max-w-6xl mx-auto px-4 text-center">
+      <section className="section-fade-in relative overflow-hidden py-12 md:py-16" data-reveal>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(130deg,#0d143d_0%,#1a1f4e_45%,#304a9b_100%)]" />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Contact Us</h1>
-          <p className="text-xl text-white/80">Reach out for loan guidance, requirements, or branch coordination.</p>
+          <p className="text-xl text-white/85">Reach out for loan guidance, requirements, or branch coordination.</p>
         </div>
       </section>
 

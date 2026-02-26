@@ -5,3 +5,5 @@ build
 .env.local
 .DS_Store
 *.log
+server/data/admin-users.json
+server/data/auth-log.json

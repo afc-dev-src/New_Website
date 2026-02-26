@@ -4,14 +4,16 @@ import { REGULATORY_INFO } from '../constants'
 export default function About() {
   return (
     <div>
-      <section className="relative overflow-hidden py-16 md:py-24 bg-[#1a1f4e]">
+      <section className="relative overflow-hidden py-16 md:py-24">
         <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(130deg,#0d143d_0%,#1a1f4e_40%,#2e448f_100%)]" />
+          <div className="absolute inset-0 bg-black/35" />
           <div className="absolute -top-20 -left-16 h-64 w-64 rounded-full bg-red-500/20 blur-3xl" />
           <div className="absolute -bottom-20 right-0 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
         </div>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
           <p className="text-red-300 text-sm font-semibold tracking-wider uppercase mb-3">Company</p>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">About AFC SME Finance</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-white">About AFC SME Finance Inc.</h1>
           <p className="text-white/80 mt-5 max-w-4xl leading-relaxed text-lg">
             AFC SME Finance, Inc. is a Filipino-owned financing company focused on fast and secured real estate loans.
             We continue to serve more clients and communities nationwide through practical, accessible, and reliable financing.

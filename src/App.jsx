@@ -17,6 +17,7 @@ import FAQs from './pages/FAQs'
 import ApplicationForm from './pages/ApplicationForm'
 import Contact from './pages/Contact'
 import BranchLocator from './pages/BranchLocator'
+import Admin from './pages/Admin'
 
 function AppContent() {
   const location = useLocation()
@@ -57,6 +58,7 @@ function AppContent() {
             <Route path="/application-form" element={<ApplicationForm />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/branches" element={<BranchLocator />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
       </ErrorBoundary>

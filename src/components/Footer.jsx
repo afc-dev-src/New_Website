@@ -83,6 +83,14 @@ export default function Footer() {
 
         <div className="border-t border-white/10 mt-10 pt-6 text-sm text-white/50 text-center">
           <p>&copy; 2026 AFC SME Finance Inc. All rights reserved.</p>
+          <div className="mt-3">
+            <Link
+              to="/admin"
+              className="inline-block text-xs border border-white/30 text-white/80 hover:text-white hover:border-white/60 px-3 py-1.5 rounded"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

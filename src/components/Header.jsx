@@ -244,7 +244,7 @@ export default function Header() {
                 isBranches ? 'text-red-600 bg-red-50' : 'text-[#1a1f4e] hover:text-red-600'
               }`}
             >
-              Branch Locator
+              Branches
             </Link>
           </div>
 
@@ -308,7 +308,7 @@ export default function Header() {
             className={`block py-2 text-sm font-medium whitespace-nowrap ${isBranches ? 'text-red-600' : 'text-[#1a1f4e]'}`}
             onClick={() => setMobileMenuOpen(false)}
           >
-            Branch Locator
+            Branches
           </Link>
           <Link
             to="/application-form"
