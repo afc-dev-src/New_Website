@@ -1,0 +1,147 @@
+-- Supabase starter seed for public.properties
+-- Run this in Supabase SQL Editor after creating the properties table.
+
+insert into public.properties (
+  name,
+  type,
+  location,
+  price,
+  size,
+  bedrooms,
+  bathrooms,
+  features,
+  status,
+  "imageUrls",
+  "imageUrl"
+)
+values
+  (
+    'Sunset Residences - Unit 4B',
+    'Residential Condo',
+    'Makati City',
+    8500000,
+    '68 sqm',
+    2,
+    1,
+    'High-floor, City view, Parking',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Peninsula Tower - Unit 1801',
+    'Residential Condo',
+    'Makati City',
+    12000000,
+    '98 sqm',
+    2,
+    2,
+    'Sea view, Balcony, Smart home',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Golden Hills - Lot 15',
+    'House & Lot',
+    'Cavite',
+    5500000,
+    '120 sqm',
+    3,
+    2,
+    'Modern design, Swimming pool',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Eastwood Commercial Space - 201',
+    'Commercial Unit',
+    'Quezon City',
+    4200000,
+    '45 sqm',
+    0,
+    1,
+    'Mixed-use zone, High foot traffic',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Verde Hills - Villa 3',
+    'House & Lot',
+    'Tagaytay',
+    9800000,
+    '250 sqm',
+    4,
+    3,
+    'Scenic view, Large garden, Pool',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'BGC Office Tower - Floor 22',
+    'Office Space',
+    'Bonifacio Global City',
+    15000000,
+    '200 sqm',
+    0,
+    2,
+    'LEED certified, Modern infrastructure',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Jasmine Garden - Unit 5A',
+    'Residential Condo',
+    'Paranaque City',
+    6800000,
+    '62 sqm',
+    1,
+    1,
+    'Garden view, Gym access',
+    'Under OCU',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Riverstone - Lot 8',
+    'House & Lot',
+    'Las Pinas',
+    7200000,
+    '135 sqm',
+    3,
+    2,
+    'Gated community, 24/7 security',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Cyber Park - Unit 1202',
+    'Residential Condo',
+    'Mandaluyong City',
+    9100000,
+    '85 sqm',
+    2,
+    2,
+    'Modern facilities, Near MRT',
+    'Available',
+    '[]'::jsonb,
+    ''
+  ),
+  (
+    'Park Ridge - Penthouse',
+    'Residential Condo',
+    'Makati City',
+    18500000,
+    '160 sqm',
+    3,
+    2,
+    'Luxury finishes, Panoramic view',
+    'Available',
+    '[]'::jsonb,
+    ''
+  );

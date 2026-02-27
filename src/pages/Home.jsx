@@ -60,6 +60,7 @@ function HouseIcon({ className = '' }) {
 export default function Home() {
   const [properties, setProperties] = useState(allProperties)
   const [activePartner, setActivePartner] = useState(0)
+  const [showHeroStrip, setShowHeroStrip] = useState(true)
 
   useEffect(() => {
     let ignore = false
@@ -82,6 +83,14 @@ export default function Home() {
       setActivePartner((prev) => (prev + 1) % partnerPlaceholders.length)
     }, 1800)
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowHeroStrip(window.scrollY < 80)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const previewLoanAmount = 1000000
@@ -119,42 +128,59 @@ export default function Home() {
   return (
     <div>
       <HeroSlider />
-      <ProductExplorer />
 
-      <section className="py-8 md:py-10 bg-[#f3f5f9]">
-        <div className="w-full max-w-[1279px] mx-auto px-6">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1a1f4e]">WHY CHOOSE AFC SME</h2>
-            <p className="text-[#374151] text-sm md:text-base mt-3 leading-relaxed">
-              We&apos;re here to help you move forward-para sa negosyo, para sa pamilya.
-            </p>
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-            {differentiators.map((item) => (
-              <div
-                key={item.title}
-                className="overflow-hidden rounded-2xl border border-[#e5e7eb]/80 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                <div className="border border-black/5">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className={`h-[120px] md:h-[150px] w-full object-cover ${item.imagePosition} filter contrast-[1.1] saturate-[1.08] brightness-[0.96]`}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <div className="h-px w-full bg-black/5" />
-                <div className="px-5 py-4">
-                  <h3 className="text-base md:text-lg font-bold uppercase tracking-wide text-[#1a1f4e] mb-2">{item.title}</h3>
-                  <p className="text-[#4b5563] text-sm md:text-base leading-relaxed">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      <section
+        className={`bg-white overflow-hidden transition-all duration-300 ${
+          showHeroStrip
+            ? 'border-b border-[#e5e7eb] max-h-24 opacity-100 py-5 md:py-12'
+            : 'border-b border-transparent max-h-0 opacity-0 py-0'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-center text-sm md:text-base text-[#1a1f4e]/75">
+           
+          </p>
         </div>
       </section>
+
+      <ProductExplorer
+        middleContent={(
+          <section className="py-6 md:py-8 bg-[#f3f5f9]">
+            <div className="w-full max-w-[1279px] mx-auto px-6">
+              <div className="max-w-3xl">
+                <h2 className="text-xl md:text-2xl font-bold text-[#1a1f4e]">WHY CHOOSE AFC SME</h2>
+                <p className="text-[#374151] text-sm mt-2 leading-relaxed">
+                  We&apos;re here to help you move forward-para sa negosyo, para sa pamilya.
+                </p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                {differentiators.map((item) => (
+                  <div
+                    key={item.title}
+                    className="overflow-hidden rounded-2xl border border-[#e5e7eb]/80 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
+                  >
+                    <div className="border border-black/5">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className={`h-[100px] md:h-[125px] w-full object-cover ${item.imagePosition} filter contrast-[1.1] saturate-[1.08] brightness-[0.96]`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                    <div className="h-px w-full bg-black/5" />
+                    <div className="px-4 py-3">
+                      <h3 className="text-sm md:text-base font-bold uppercase tracking-wide text-[#1a1f4e] mb-1.5">{item.title}</h3>
+                      <p className="text-[#4b5563] text-sm md:text-base leading-relaxed">{item.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      />
 
       <section className="relative overflow-hidden py-14 md:py-16 bg-[#1a1f4e]">
         <div className="pointer-events-none absolute inset-0">
@@ -238,32 +264,38 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative mt-10 h-[180px] md:h-[210px]">
+          <div className="relative mt-10 h-[220px] md:h-[260px]">
             {partnerPlaceholders.map((partner, index) => {
               const count = partnerPlaceholders.length
               let offset = (index - activePartner + count) % count
               if (offset > count / 2) offset -= count
               const absOffset = Math.abs(offset)
-              const translateX = offset * 170
-              const scale = Math.max(0.74, 1 - absOffset * 0.14)
-              const opacity = Math.max(0.22, 1 - absOffset * 0.22)
-              const zIndex = 20 - absOffset
+              const isVisible = absOffset <= 2
+              const translateX = offset * 210
+              const scale = Math.max(0.8, 1.08 - absOffset * 0.14)
+              const opacity = isVisible ? Math.max(0.25, 1 - absOffset * 0.22) : 0
+              const zIndex = isVisible ? 20 - absOffset : 0
 
               return (
                 <div
                   key={partner.id}
-                  className="absolute left-1/2 top-1/2 w-[170px] md:w-[210px] h-[110px] md:h-[130px] -translate-y-1/2 rounded-2xl border border-[#dbe3ff] bg-white shadow-[0_16px_30px_rgba(26,31,78,0.10)] transition-all duration-700"
+                  className={`absolute left-1/2 top-1/2 w-[210px] md:w-[260px] -translate-y-1/2 transition-all duration-700 ${
+                    isVisible ? '' : 'pointer-events-none'
+                  }`}
                   style={{
-                    transform: `translateX(${translateX}px) translateY(-50%) scale(${scale})`,
+                    transform: `translateX(calc(-50% + ${translateX}px)) translateY(-50%) scale(${scale})`,
                     opacity,
                     zIndex,
                   }}
                 >
-                  <div className="h-full w-full flex items-center justify-center">
-                    <span className="text-[#1a1f4e]/70 font-semibold text-sm md:text-base tracking-wide">
-                      {partner.name}
+                  <div className="h-[130px] md:h-[165px] w-full rounded-2xl border border-[#dbe3ff] bg-white shadow-[0_16px_30px_rgba(26,31,78,0.10)] flex items-center justify-center">
+                    <span className="text-[#1a1f4e]/50 font-semibold text-xs md:text-sm tracking-wide uppercase">
+                      Logo Placeholder
                     </span>
                   </div>
+                  <p className="mt-2 text-center text-[#1a1f4e]/70 font-semibold text-xs md:text-sm tracking-wide">
+                    {partner.name}
+                  </p>
                 </div>
               )
             })}

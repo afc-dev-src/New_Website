@@ -45,7 +45,7 @@ function AdminLogin({ onLogin }) {
           {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input className="w-full border border-gray-300 rounded px-3 py-2" value={username} onChange={(e) => setUsername(e.target.value)} />
             </div>
             <div>
@@ -326,4 +326,3 @@ export default function Admin() {
     </div>
   )
 }
-
