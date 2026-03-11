@@ -107,7 +107,7 @@ export default function Products() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Products</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our products and services</h1>
           <p className="text-xl text-white/85">Real estate loans for your business financing needs</p>
         </div>
       </section>

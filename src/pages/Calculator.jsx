@@ -11,7 +11,7 @@ const moneyFormatter = new Intl.NumberFormat('en-PH', {
 const MIN_LOAN_AMOUNT = 100000
 const MAX_LOAN_AMOUNT = 50000000
 const MIN_TERM_MONTHS = 1
-const MAX_TERM_MONTHS = 120
+const MAX_TERM_MONTHS = 150
 
 const formatMoney = (value) => {
   return moneyFormatter.format(Number(value) || 0)
@@ -30,7 +30,6 @@ export default function Calculator() {
   const [monthlyRatePercent, setMonthlyRatePercent] = useState(0.5)
   const [termMonths, setTermMonths] = useState(60)
   const [result, setResult] = useState(null)
-  const [paymentTable, setPaymentTable] = useState([])
 
   useEffect(() => {
     const boundedLoanAmount = Math.min(Math.max(Number(loanAmount) || 0, MIN_LOAN_AMOUNT), MAX_LOAN_AMOUNT)
@@ -39,43 +38,16 @@ export default function Calculator() {
 
     if (boundedLoanAmount <= 0 || monthlyRate < 0 || totalMonths <= 0) {
       setResult(null)
-      setPaymentTable([])
       return
     }
 
     const monthlyPayment = computeMonthlyPayment(boundedLoanAmount, totalMonths, monthlyRate)
-
-    let remainingBalance = boundedLoanAmount
-    const rows = Array.from({ length: totalMonths }, (_, index) => {
-      const month = index + 1
-      const interest = monthlyRate === 0 ? 0 : remainingBalance * monthlyRate
-      let principal = monthlyPayment - interest
-
-      // Ensure balance is fully closed on the final row despite floating-point drift.
-      if (month === totalMonths || principal > remainingBalance) {
-        principal = remainingBalance
-      }
-
-      const monthlyAmortization = principal + interest
-      remainingBalance = Math.max(0, remainingBalance - principal)
-
-      return {
-        month,
-        monthlyAmortization,
-        interest,
-        principal,
-        balance: remainingBalance,
-      }
-    })
-
-    const totalRepayment = rows.reduce((sum, row) => sum + row.monthlyAmortization, 0)
+    const totalRepayment = monthlyPayment * totalMonths
 
     setResult({
       monthlyPayment: monthlyPayment.toFixed(2),
       totalRepayment: totalRepayment.toFixed(2),
     })
-
-    setPaymentTable(rows)
   }, [loanAmount, monthlyRatePercent, termMonths])
 
   return (
@@ -216,40 +188,6 @@ export default function Calculator() {
                 <strong>Disclaimer:</strong> These estimates are for informational purposes only. Actual payments may vary based on final loan terms, processing fees, and approval conditions. Subject to approval.
               </p>
             </div>
-
-            {paymentTable.length > 0 && (
-              <div>
-                <h3 className="text-2xl font-bold text-navy mb-4">Monthly Amortization Schedule</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-sky-200">
-                    <thead className="bg-[#97cfdc] text-[#0f172a]">
-                      <tr>
-                        <th className="border border-sky-200 p-3 text-left">Month</th>
-                        <th className="border border-sky-200 p-3 text-right">Monthly Amortization</th>
-                        <th className="border border-sky-200 p-3 text-right">Principal</th>
-                        <th className="border border-sky-200 p-3 text-right">Remaining Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-[#d7edf3]">
-                      {paymentTable.map((row) => (
-                        <tr key={row.month} className="even:bg-[#cfe8ef]">
-                          <td className="border border-sky-200 p-3 font-semibold">Month {row.month}</td>
-                          <td className="border border-sky-200 p-3 text-right">
-                            {formatMoney(row.monthlyAmortization)}
-                          </td>
-                          <td className="border border-sky-200 p-3 text-right">
-                            {formatMoney(row.principal)}
-                          </td>
-                          <td className="border border-sky-200 p-3 text-right">
-                            {formatMoney(row.balance)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import aboutUsImage from '../Images/About us.jpg'
+import companyProfileImage from '../Images/company-profile.jpg'
 
 export default function About() {
   return (
@@ -44,13 +45,17 @@ export default function About() {
 
       <section className="py-10 md:py-12 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="rounded-2xl border border-dashed border-[#1a1f4e]/35 bg-[#f8faff] p-6 md:p-8">
+          <div className="rounded-2xl border border-[#dbe3ff] bg-[#f8faff] p-6 md:p-8 shadow-[0_16px_34px_rgba(26,31,78,0.08)]">
             <p className="text-red-600 text-xs font-semibold tracking-[0.16em] uppercase">Meet Our Team</p>
             <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1a1f4e]">AFC SME Leadership Team</h2>
-            <div className="mt-5 rounded-xl border-2 border-dashed border-[#1a1f4e]/25 bg-white/80 aspect-[16/7] flex items-center justify-center">
-              <p className="text-sm md:text-base font-medium text-[#1a1f4e]/60 text-center px-4">
-                Insert team photo of AFC SME leadership here
-              </p>
+            <div className="mt-5 overflow-hidden rounded-xl border border-[#dbe3ff] bg-white shadow-[0_12px_28px_rgba(26,31,78,0.10)]">
+              <img
+                src={companyProfileImage}
+                alt="AFC SME company profile"
+                className="aspect-[16/7] w-full object-cover object-center"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           </div>
         </div>

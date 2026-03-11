@@ -34,7 +34,7 @@ export default function ProductExplorer({ middleContent = null }) {
       <section id="services" className="section-fade-in py-10 md:py-12 bg-white" data-reveal>
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-7 md:mb-8">
-            <p className="text-[#8c93a8] text-xs md:text-sm font-semibold tracking-wider uppercase mb-2">Our Services</p>
+            <p className="text-[#8c93a8] text-xs md:text-sm font-semibold tracking-wider uppercase mb-2">Our Products and Services</p>
             <h2 className="text-xl md:text-3xl font-bold text-[#0d2a7a]">Fast, Secure and Personalized Services</h2>
           </div>
 

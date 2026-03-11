@@ -11,9 +11,16 @@ import whySecureReliableImage from '../Images/WHY- Secure and Reliable.jpg'
 import whyGuidingImage from '../Images/WHY-Guiding.jpg'
 import whyTermsImage from '../Images/WHY-Terms.jpg'
 import partner5RImage from '../Images/5R.jpg'
+import partnerAtramImage from '../Images/800-ATRAM.png'
+import partnerCsbImage from '../Images/CSB.png'
+import partnerCtbcImage from '../Images/ctbc.png'
 import partnerPhirstImage from '../Images/PHIRST.png'
-import partnerIsocImage from '../Images/ISOC.png'
+import partnerIsocImage from '../Images/Finreal Telemarketing Services Inc..png'
+import partnerLandbankImage from '../Images/landbank.png'
 import partnerPaImage from '../Images/PA.jpg'
+import partnerPbbImage from '../Images/pbb.jpg'
+import partnerSmallBusinessImage from '../Images/small business.png'
+import partnerUnicapitalImage from '../Images/Unicapital.png'
 
 const differentiators = [
   {
@@ -43,10 +50,17 @@ const differentiators = [
 ]
 
 const partnerPlaceholders = [
-  { id: 'p1', name: '5R', logo: partner5RImage },
-  { id: 'p2', name: 'PHIRST', logo: partnerPhirstImage },
-  { id: 'p3', name: 'ISOC', logo: partnerIsocImage },
-  { id: 'p4', name: 'PA', logo: partnerPaImage },
+  { id: 'p1', name: '5R Prime Properties', logo: partner5RImage },
+  { id: 'p2', name: 'PHIRST Park Homes', logo: partnerPhirstImage },
+  { id: 'p3', name: 'FTS Inc.', logo: partnerIsocImage },
+  { id: 'p4', name: 'P.A. Properties', logo: partnerPaImage },
+  { id: 'p5', name: 'Unicapital', logo: partnerUnicapitalImage },
+  { id: 'p6', name: 'LandBank', logo: partnerLandbankImage },
+  { id: 'p7', name: 'Small Business', logo: partnerSmallBusinessImage },
+  { id: 'p8', name: 'CTBC', logo: partnerCtbcImage },
+  { id: 'p9', name: 'PBB', logo: partnerPbbImage },
+  { id: 'p10', name: 'CSB', logo: partnerCsbImage },
+  { id: 'p11', name: 'ATRAM', logo: partnerAtramImage },
 ]
 
 function HouseIcon({ className = '' }) {
@@ -244,9 +258,6 @@ export default function Home() {
                         {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(calculatorResult.monthlyPayment)}
                       </span>
                     </div>
-                    <p className="mt-2 text-xs text-white/70">
-                      Formula: ((Loan x Monthly Rate x Term) + Loan) / Term
-                    </p>
                     <p className="mt-3 text-xs text-white/60">*Estimate only. Final terms are subject to approval.</p>
                   </div>
                 </div>
@@ -260,9 +271,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto">
             <p className="text-red-600 text-xs md:text-sm font-semibold tracking-wider uppercase">Our Network</p>
-            <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1a1f4e]">Trusted Partners</h2>
+            <h2 className="mt-2 text-2xl md:text-3xl font-bold text-[#1a1f4e]">Corporate and Bank Partners</h2>
             <p className="mt-3 text-[#1a1f4e]/70 text-sm md:text-base">
-              Placeholder logos below. Replace these with actual partner brands anytime.
+              Explore the companies and banks that help support our growing network.
             </p>
           </div>
 
