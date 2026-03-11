@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import mainLogo from '../Images/main logo.png'
+import mainLogo from '../Images/branding/main logo.png'
 import { TIMINGS, CONTACT_INFO, REGULATORY_INFO } from '../constants'
 
 const companyItems = [
@@ -17,12 +17,11 @@ const productItems = [
 const resourceItems = [
   { label: 'Loan Calculator', href: '/calculator' },
   { label: 'FAQs', href: '/faqs' },
-  { label: 'Forms', href: '/application-form' },
+  { label: 'Disclosures', href: '/disclosures' },
 ]
 
 const propertyItems = [
   { label: 'Browse Properties', href: '/properties' },
-  { label: 'Available Properties', href: '/properties' },
 ]
 
 function Chevron({ open }) {
@@ -178,7 +177,7 @@ export default function Header() {
   const isHome = location.pathname === '/'
   const isCompany = location.pathname === '/about' || location.pathname === '/financial-statement'
   const isProducts = location.pathname === '/products'
-  const isResources = ['/calculator', '/faqs', '/application-form'].includes(location.pathname)
+  const isResources = ['/calculator', '/faqs', '/disclosures'].includes(location.pathname)
   const isProperties = location.pathname === '/properties'
   const isBranches = location.pathname === '/branches'
   const isContact = location.pathname === '/contact'
@@ -249,11 +248,11 @@ export default function Header() {
           </div>
 
           <Link
-            to="/application-form"
+            to="/contact"
             style={{ '--nav-drop-delay': '300ms' }}
             className="nav-drop-start hidden xl:inline-flex items-center justify-center whitespace-nowrap bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-7 py-3 rounded-xl shadow-sm"
           >
-            Apply / Inquire Now
+            Inquire Now
           </Link>
         </div>
 
@@ -311,11 +310,11 @@ export default function Header() {
             Branches
           </Link>
           <Link
-            to="/application-form"
+            to="/contact"
             className="mt-4 inline-block w-full text-center whitespace-nowrap bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-6 py-3 rounded-xl"
             onClick={() => setMobileMenuOpen(false)}
           >
-            Apply / Inquire Now
+            Inquire Now
           </Link>
         </div>
       </div>

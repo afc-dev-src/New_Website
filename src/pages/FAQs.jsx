@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { blogEntries } from '../data/blogs'
 
 const faqs = [
   {
@@ -49,6 +50,12 @@ const faqs = [
     answer:
       'Yes! Takeout loans are designed to refinance existing mortgages at better rates or terms. Bring your current loan statement and we can provide a quote.',
   },
+  {
+    id: 9,
+    question: 'How do I add blog links with images to this page?',
+    answer:
+      'Update src/data/blogs.js and add the title, link, and image for each item. The homepage and FAQ cards both read from that file, so one update keeps both sections in sync.',
+  },
 ]
 
 function FAQItem({ item }) {
@@ -71,6 +78,60 @@ function FAQItem({ item }) {
         </div>
       )}
     </div>
+  )
+}
+
+function BlogCard({ blog }) {
+  const isEmbed = Boolean(blog.embedUrl)
+  const previewHeight = isEmbed ? Math.min(blog.embedHeight || 520, 430) : null
+
+  return (
+    <article className={`mx-auto flex h-full w-full max-w-[320px] flex-col overflow-hidden rounded-2xl border border-[#dbe3ff] bg-white shadow-[0_18px_40px_rgba(26,31,78,0.10)] ${isEmbed ? 'max-w-[360px]' : ''}`}>
+      {blog.embedUrl ? (
+        <div className="bg-white p-3">
+          <div className="mx-auto overflow-hidden rounded-2xl border border-[#e2e8f0]">
+            <iframe
+              src={blog.embedUrl}
+              width="100%"
+              height={previewHeight}
+              style={{ border: 'none', overflow: 'hidden' }}
+              scrolling="no"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              title={blog.title}
+            />
+          </div>
+        </div>
+      ) : blog.image ? (
+        <img
+          src={blog.image}
+          alt={blog.imageAlt || `${blog.title} cover`}
+          className="h-48 w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="flex h-48 items-center justify-center bg-[linear-gradient(135deg,#1a1f4e_0%,#304a9b_100%)] px-6 text-center text-white/80">
+          Add an image in src/data/blogs.js to show a blog preview here.
+        </div>
+      )}
+
+      <div className={`flex flex-1 flex-col gap-4 ${isEmbed ? 'p-5 pt-2' : 'p-5'}`}>
+        <h3 className="text-lg font-semibold leading-snug text-[#1a1f4e]">
+          {blog.title}
+        </h3>
+        <a
+          href={blog.href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-auto inline-flex items-center gap-2 rounded-xl bg-[#1a1f4e] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#11183d]"
+        >
+          Open article
+          <span aria-hidden="true">+</span>
+        </a>
+      </div>
+    </article>
   )
 }
 
@@ -100,8 +161,35 @@ export default function FAQs() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-12 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-red-600">Blog Updates</p>
+            <h2 className="mt-3 text-3xl font-bold text-[#1a1f4e]">Articles, announcements, and Facebook posts</h2>
+            <p className="mt-3 text-base leading-relaxed text-[#475569]">
+              Add blog links in src/data/blogs.js with a title, destination link, and preview image. The homepage and FAQ blog cards will update together automatically.
+            </p>
+          </div>
+
+          {blogEntries.length > 0 ? (
+            <div className="mt-8 grid justify-items-center gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {blogEntries.map((blog) => (
+                <BlogCard key={blog.id} blog={blog} />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-dashed border-[#cbd5e1] bg-white p-8 shadow-sm">
+              <h3 className="text-xl font-bold text-[#1a1f4e]">No blog links added yet</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#475569]">
+                When you are ready, open src/data/blogs.js and add a new item with a title, href, and image. Once you save the file, the blog card will appear here automatically.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-12 bg-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-navy mb-4">Still Have Questions?</h2>
           <p className="text-gray-600 mb-8">

@@ -52,7 +52,6 @@ export const ROUTES = {
   CALCULATOR: '/calculator',
   DISCLOSURES: '/disclosures',
   FAQS: '/faqs',
-  APPLICATION_FORM: '/application-form',
   CONTACT: '/contact',
   BRANCHES: '/branches',
   INQUIRY_FORM: '/#inquiry-form',

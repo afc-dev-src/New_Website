@@ -3,24 +3,25 @@ import { useEffect, useMemo, useState } from 'react'
 import HeroSlider from '../components/HeroSlider'
 import InquiryForm from '../components/InquiryForm'
 import ProductExplorer from '../components/ProductExplorer'
+import { blogEntries } from '../data/blogs'
 import { properties as allProperties } from '../data/properties'
 import { homeProductExplorer } from '../data/products'
 import { api } from '../services/api'
-import whyFastProcessingImage from '../Images/WHY-Fast Processing.jpg'
-import whySecureReliableImage from '../Images/WHY- Secure and Reliable.jpg'
-import whyGuidingImage from '../Images/WHY-Guiding.jpg'
-import whyTermsImage from '../Images/WHY-Terms.jpg'
-import partner5RImage from '../Images/5R.jpg'
-import partnerAtramImage from '../Images/800-ATRAM.png'
-import partnerCsbImage from '../Images/CSB.png'
-import partnerCtbcImage from '../Images/ctbc.png'
-import partnerPhirstImage from '../Images/PHIRST.png'
-import partnerIsocImage from '../Images/Finreal Telemarketing Services Inc..png'
-import partnerLandbankImage from '../Images/landbank.png'
-import partnerPaImage from '../Images/PA.jpg'
-import partnerPbbImage from '../Images/pbb.jpg'
-import partnerSmallBusinessImage from '../Images/small business.png'
-import partnerUnicapitalImage from '../Images/Unicapital.png'
+import whyFastProcessingImage from '../Images/why-choose/WHY-Fast Processing.jpg'
+import whySecureReliableImage from '../Images/why-choose/WHY- Secure and Reliable.jpg'
+import whyGuidingImage from '../Images/why-choose/WHY-Guiding.jpg'
+import whyTermsImage from '../Images/why-choose/WHY-Terms.jpg'
+import partner5RImage from '../Images/partners/5R.jpg'
+import partnerAtramImage from '../Images/partners/800-ATRAM.png'
+import partnerCsbImage from '../Images/partners/CSB.png'
+import partnerCtbcImage from '../Images/partners/ctbc.png'
+import partnerPhirstImage from '../Images/partners/PHIRST.png'
+import partnerIsocImage from '../Images/partners/Finreal Telemarketing Services Inc..png'
+import partnerLandbankImage from '../Images/partners/landbank.png'
+import partnerPaImage from '../Images/partners/PA.jpg'
+import partnerPbbImage from '../Images/partners/pbb.jpg'
+import partnerSmallBusinessImage from '../Images/partners/small business.png'
+import partnerUnicapitalImage from '../Images/partners/Unicapital.png'
 
 const differentiators = [
   {
@@ -73,9 +74,70 @@ function HouseIcon({ className = '' }) {
   )
 }
 
+function BlogSliderCard({ blog }) {
+  const isEmbed = Boolean(blog.embedUrl)
+  const previewHeight = isEmbed ? Math.min(blog.embedHeight || 520, 410) : null
+
+  return (
+    <article className="group relative mx-auto flex h-full w-full max-w-[320px] flex-col overflow-hidden rounded-[28px] border border-white/12 bg-white/10 shadow-[0_22px_50px_rgba(2,6,23,0.28)] backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
+      {blog.embedUrl ? (
+        <div className="bg-white p-3 md:p-4">
+          <div className="mx-auto overflow-hidden rounded-[24px] border border-[#e2e8f0]">
+            <iframe
+              src={blog.embedUrl}
+              width="100%"
+              height={previewHeight}
+              style={{ border: 'none', overflow: 'hidden' }}
+              scrolling="no"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              title={blog.title}
+            />
+          </div>
+        </div>
+      ) : blog.image ? (
+        <div className="overflow-hidden">
+          <img
+            src={blog.image}
+            alt={blog.imageAlt || `${blog.title} cover`}
+            className="h-52 w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      ) : (
+        <div className="flex h-52 items-center justify-center bg-[linear-gradient(135deg,#1a1f4e_0%,#304a9b_100%)] px-6 text-center text-sm font-medium text-white/80">
+          Add an image in src/data/blogs.js to display a blog preview.
+        </div>
+      )}
+
+      <div className={`relative flex flex-1 flex-col gap-4 ${isEmbed ? 'p-5 pt-2 md:p-6 md:pt-2' : 'p-5 md:p-6'}`}>
+        <h3 className="text-lg font-semibold leading-snug text-white">
+          {blog.title}
+        </h3>
+        <a
+          href={blog.href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-auto inline-flex items-center gap-3 self-start rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors duration-300 hover:bg-white/18"
+        >
+          Open article
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/12">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M9 7h8v8" />
+            </svg>
+          </span>
+        </a>
+      </div>
+    </article>
+  )
+}
+
 export default function Home() {
   const [properties, setProperties] = useState(allProperties)
   const [activePartner, setActivePartner] = useState(0)
+  const [activeBlog, setActiveBlog] = useState(0)
   const [showHeroStrip, setShowHeroStrip] = useState(true)
 
   useEffect(() => {
@@ -109,6 +171,12 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    if (activeBlog >= blogEntries.length) {
+      setActiveBlog(0)
+    }
+  }, [activeBlog])
+
   const previewLoanAmount = 1000000
   const previewMonthlyRate = 0.9
   const previewTermMonths = 120
@@ -140,6 +208,20 @@ export default function Home() {
     const monthlyRate = previewMonthlyRate / 100
     return ((amount * monthlyRate * previewTermMonths) + amount) / previewTermMonths
   }
+
+  const goToPreviousBlog = () => {
+    if (blogEntries.length === 0) return
+    setActiveBlog((prev) => (prev - 1 + blogEntries.length) % blogEntries.length)
+  }
+
+  const goToNextBlog = () => {
+    if (blogEntries.length === 0) return
+    setActiveBlog((prev) => (prev + 1) % blogEntries.length)
+  }
+
+  const visibleBlogCards = blogEntries.length > 0
+    ? Array.from({ length: Math.min(blogEntries.length, 3) }, (_, index) => blogEntries[(activeBlog + index) % blogEntries.length])
+    : []
 
   return (
     <div>
@@ -326,24 +408,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-20 bg-[linear-gradient(180deg,#ffffff_0%,#f5f7ff_100%)]">
+      <section className="py-12 md:py-14 bg-[linear-gradient(180deg,#ffffff_0%,#f5f7ff_100%)]">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-4xl mx-auto">
-            <p className="text-red-600 text-sm font-semibold tracking-wider uppercase">Foreclosed Properties</p>
-            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[#1a1f4e]">
-              <span className="inline-flex items-center gap-3">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-600">
-                  <HouseIcon className="h-6 w-6" />
-                </span>
-                Browse Available Properties
-              </span>
-            </h2>
-            <p className="text-[#1a1f4e]/75 text-base md:text-lg mt-4 leading-relaxed">
-              Review selected listings and explore potential opportunities directly from the website.
-            </p>
-          </div>
-
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProperties.map((property, index) => {
               const propertyImage =
                 (Array.isArray(property.imageUrls) && property.imageUrls[0]) ||
@@ -406,6 +473,70 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {blogEntries.length > 0 && (
+        <section className="relative overflow-hidden bg-[#0b1336] py-14 md:py-16">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -left-12 top-6 h-60 w-60 rounded-full bg-red-500/18 blur-3xl" />
+            <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-cyan-300/12 blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-20" />
+          </div>
+
+          <div className="relative max-w-7xl mx-auto px-6">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.32em] text-red-300">Latest Updates</p>
+                <h2 className="mt-3 text-3xl md:text-4xl font-bold text-white">Our latest posts and announcements!</h2>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={goToPreviousBlog}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white transition-colors hover:bg-white/16"
+                  aria-label="Show previous blog"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={goToNextBlog}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white transition-colors hover:bg-white/16"
+                  aria-label="Show next blog"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-10 grid justify-items-center gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {visibleBlogCards.map((blog) => (
+                <BlogSliderCard key={`${blog.id}-${activeBlog}`} blog={blog} />
+              ))}
+            </div>
+
+            {blogEntries.length > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2">
+                {blogEntries.map((blog, index) => (
+                  <button
+                    key={blog.id}
+                    type="button"
+                    onClick={() => setActiveBlog(index)}
+                    className={`h-2.5 rounded-full transition-all ${
+                      index === activeBlog ? 'w-10 bg-red-400' : 'w-2.5 bg-white/30 hover:bg-white/45'
+                    }`}
+                    aria-label={`Show blog ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <InquiryForm />
     </div>

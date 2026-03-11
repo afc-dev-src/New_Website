@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import remImage from '../Images/1.png'
-import takeoutImage from '../Images/2.png'
-import acquisitionImage from '../Images/3.png'
+import remImage from '../Images/hero/1.png'
+import takeoutImage from '../Images/hero/2.png'
+import acquisitionImage from '../Images/hero/3.png'
 
 const slides = [
   {

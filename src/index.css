@@ -65,15 +65,15 @@ button, a {
 }
 
 .section-bg-rem::before {
-  background-image: url('./Images/RENm.jpg');
+  background-image: url('./Images/products/RENm.jpg');
 }
 
 .section-bg-takeout::before {
-  background-image: url('./Images/takeout.jpg');
+  background-image: url('./Images/products/takeout.jpg');
 }
 
 .section-bg-acquisition::before {
-  background-image: url('./Images/acqui.jpg');
+  background-image: url('./Images/products/acqui.jpg');
 }
 
 @keyframes text-enter {

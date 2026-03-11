@@ -1,9 +1,9 @@
-import remImage from '../Images/RENm1.jpg'
-import takeoutImage from '../Images/takeout1.jpg'
-import acquisitionImage from '../Images/acqui1.jpg'
-import productREM from '../Images/our_products_REM.png'
-import productRET from '../Images/our_products_RET.png'
-import productREA from '../Images/our_products_REA.png'
+import remImage from '../Images/products/RENm1.jpg'
+import takeoutImage from '../Images/products/takeout1.jpg'
+import acquisitionImage from '../Images/products/acqui1.jpg'
+import productREM from '../Images/products/our_products_REM.png'
+import productRET from '../Images/products/our_products_RET.png'
+import productREA from '../Images/products/our_products_REA.png'
 
 export const homeProductExplorer = [
   {

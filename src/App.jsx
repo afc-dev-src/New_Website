@@ -14,7 +14,6 @@ import Disclosures from './pages/Disclosures'
 import About from './pages/About'
 import FinancialStatement from './pages/FinancialStatement'
 import FAQs from './pages/FAQs'
-import ApplicationForm from './pages/ApplicationForm'
 import Contact from './pages/Contact'
 import BranchLocator from './pages/BranchLocator'
 import Admin from './pages/Admin'
@@ -55,7 +54,6 @@ function AppContent() {
             <Route path="/calculator" element={<Calculator />} />
             <Route path="/disclosures" element={<Disclosures />} />
             <Route path="/faqs" element={<FAQs />} />
-            <Route path="/application-form" element={<ApplicationForm />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/branches" element={<BranchLocator />} />
             <Route path="/admin" element={<Admin />} />

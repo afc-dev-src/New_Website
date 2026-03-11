@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { homeProductExplorer } from '../data/products'
-import processApplyImage from '../Images/Apply.svg'
-import processSubmitImage from '../Images/Submit.svg'
-import processEvaluateImage from '../Images/Evaluation.svg'
-import processReleaseImage from '../Images/Release.svg'
+import processApplyImage from '../Images/process/Apply.svg'
+import processSubmitImage from '../Images/process/Submit.svg'
+import processEvaluateImage from '../Images/process/Evaluation.svg'
+import processReleaseImage from '../Images/process/Release.svg'
 
 const PROCESS_TILES = [
   {

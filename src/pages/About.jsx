@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import aboutUsImage from '../Images/About us.jpg'
-import companyProfileImage from '../Images/company-profile.jpg'
+import aboutUsImage from '../Images/about/About us.jpg'
+import companyProfileImage from '../Images/about/company-profile.jpg'
 
 export default function About() {
   return (

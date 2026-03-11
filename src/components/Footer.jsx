@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import mainLogo from '../Images/logo.png'
-import npcSeal from '../Images/NPC Seal.png'
+import mainLogo from '../Images/branding/logo.png'
+import npcSeal from '../Images/branding/NPC Seal.png'
 import { CONTACT_INFO, REGULATORY_INFO } from '../constants'
 
 export default function Footer() {
@@ -74,8 +74,8 @@ export default function Footer() {
               <li>{CONTACT_INFO.PHONE}</li>
               <li>{CONTACT_INFO.EMAIL}</li>
               <li className="pt-2">
-                <Link to="/application-form" className="inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold">
-                  Apply Now
+                <Link to="/contact" className="inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold">
+                  Contact Us
                 </Link>
               </li>
             </ul>

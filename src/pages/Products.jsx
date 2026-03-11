@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import remProduct from '../Images/REM-Products.jpg'
-import takeoutProduct from '../Images/takeout-products.jpg'
-import acquisitionProduct from '../Images/AQ-Products.jpg'
+import remProduct from '../Images/products/REM-Products.jpg'
+import takeoutProduct from '../Images/products/takeout-products.jpg'
+import acquisitionProduct from '../Images/products/AQ-Products.jpg'
 
 const productSections = [
   {
