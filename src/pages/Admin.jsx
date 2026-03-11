@@ -138,36 +138,6 @@ export default function Admin() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  const onImageSelected = async (event) => {
-    const fileList = Array.from(event.target.files || [])
-    if (fileList.length === 0) return
-
-    const remainingSlots = IMAGE_LIMIT - form.imageUrls.length
-    if (remainingSlots <= 0) {
-      setError(`Image limit reached. Maximum is ${IMAGE_LIMIT}.`)
-      return
-    }
-
-    const filesToRead = fileList.slice(0, remainingSlots)
-    const readOne = (file) =>
-      new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
-        reader.readAsDataURL(file)
-      })
-
-    const imageUrls = (await Promise.all(filesToRead.map(readOne))).filter(Boolean)
-    setForm((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, ...imageUrls].slice(0, IMAGE_LIMIT) }))
-
-    if (fileList.length > remainingSlots) {
-      setError(`Only ${IMAGE_LIMIT} images are allowed per property.`)
-    } else {
-      setError('')
-    }
-
-    event.target.value = ''
-  }
-
   const removeImage = (index) => {
     setForm((prev) => ({
       ...prev,
@@ -175,36 +145,132 @@ export default function Admin() {
     }))
   }
 
+  const validateForm = () => {
+    if (!form.name.trim()) return 'Property name is required.'
+    if (!form.type.trim()) return 'Property type is required.'
+    if (!form.location.trim()) return 'Location is required.'
+    if (!form.price || form.price <= 0) return 'Valid price is required.'
+    if (form.imageUrls.length === 0) return 'At least one image is required.'
+    return null
+  }
+
   const save = async (event) => {
     event.preventDefault()
     setMessage('')
     setError('')
+
+    // Validate form
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setLoading(true)
     try {
       const payload = { ...form, imageUrls: form.imageUrls.slice(0, IMAGE_LIMIT) }
-      if (selectedId) {
+      const isUpdate = Boolean(selectedId)
+
+      if (isUpdate) {
         await api.updateProperty(token, selectedId, payload)
-        setMessage('Property updated successfully.')
       } else {
         await api.createProperty(token, payload)
-        setMessage('Property created successfully.')
       }
+
+      // Show success message
+      const successMsg = isUpdate
+        ? `✅ Property "${form.name}" updated successfully!`
+        : `✅ Property "${form.name}" added successfully!`
+      setMessage(successMsg)
+
+      // Clear form and refresh
+      setForm(EMPTY_PROPERTY)
+      setSelectedId(null)
       await refresh()
+
+      // Auto-hide success message after 4 seconds
+      setTimeout(() => setMessage(''), 4000)
     } catch (err) {
-      setError(err.message)
+      const errorMsg = err.message || 'Failed to save property. Please try again.'
+      setError(`❌ Error: ${errorMsg}`)
+
+      // Log error for debugging
+      console.error('Save property error:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
   const remove = async (id) => {
-    if (!window.confirm('Delete this property?')) return
+    if (!window.confirm('Are you sure you want to delete this property? This action cannot be undone.')) return
     setMessage('')
     setError('')
+    setLoading(true)
     try {
       await api.deleteProperty(token, id)
-      if (selectedId === id) setSelectedId(null)
-      setMessage('Property deleted successfully.')
+      if (selectedId === id) {
+        setForm(EMPTY_PROPERTY)
+        setSelectedId(null)
+      }
+      setMessage('✅ Property deleted successfully.')
       await refresh()
+
+      // Auto-hide success message after 4 seconds
+      setTimeout(() => setMessage(''), 4000)
     } catch (err) {
-      setError(err.message)
+      const errorMsg = err.message || 'Failed to delete property. Please try again.'
+      setError(`❌ Error: ${errorMsg}`)
+      console.error('Delete property error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onImageSelected = async (event) => {
+    const fileList = Array.from(event.target.files || [])
+    if (fileList.length === 0) return
+
+    const remainingSlots = IMAGE_LIMIT - form.imageUrls.length
+    if (remainingSlots <= 0) {
+      setError(`❌ Image limit reached. Maximum is ${IMAGE_LIMIT}.`)
+      return
+    }
+
+    try {
+      const filesToRead = fileList.slice(0, remainingSlots)
+      const readOne = (file) =>
+        new Promise((resolve, reject) => {
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            reject(new Error(`Invalid file type: ${file.name}. Only images are allowed.`))
+            return
+          }
+
+          // Validate file size (max 5MB per image)
+          const maxSize = 5 * 1024 * 1024
+          if (file.size > maxSize) {
+            reject(new Error(`File too large: ${file.name}. Maximum size is 5MB.`))
+            return
+          }
+
+          const reader = new FileReader()
+          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+          reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`))
+          reader.readAsDataURL(file)
+        })
+
+      const imageUrls = (await Promise.all(filesToRead.map(readOne))).filter(Boolean)
+      setForm((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, ...imageUrls].slice(0, IMAGE_LIMIT) }))
+      setError('')
+
+      if (fileList.length > remainingSlots) {
+        setError(`⚠️ Only ${remainingSlots} image(s) can be added. Maximum is ${IMAGE_LIMIT} per property.`)
+      }
+    } catch (err) {
+      setError(`❌ ${err.message}`)
+      console.error('Image upload error:', err)
+    } finally {
+      event.target.value = ''
     }
   }
 
@@ -224,8 +290,18 @@ export default function Admin() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {message && <p className="text-sm text-green-700">{message}</p>}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+            <p className="font-semibold mb-1">Error</p>
+            <p>{error}</p>
+          </div>
+        )}
+        {message && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 text-sm">
+            <p className="font-semibold mb-1">Success</p>
+            <p>{message}</p>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-white border border-gray-100 rounded-lg shadow-sm p-4">
@@ -310,12 +386,36 @@ export default function Admin() {
               )}
 
               <div className="md:col-span-2 flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">
-                  {selectedId ? 'Save Changes' : 'Add Property'}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded font-medium transition"
+                >
+                  {loading ? 'Saving...' : selectedId ? 'Save Changes' : 'Add Property'}
                 </button>
                 {selectedId && (
-                  <button type="button" onClick={() => remove(selectedId)} className="px-4 py-2 border border-red-300 text-red-700 rounded">
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => remove(selectedId)}
+                    className="px-4 py-2 border border-red-300 text-red-700 rounded font-medium hover:bg-red-50 disabled:opacity-50 transition"
+                  >
                     Delete
+                  </button>
+                )}
+                {selectedId && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setSelectedId(null)
+                      setForm(EMPTY_PROPERTY)
+                      setError('')
+                      setMessage('')
+                    }}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 disabled:opacity-50 transition"
+                  >
+                    Cancel
                   </button>
                 )}
               </div>

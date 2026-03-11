@@ -3,6 +3,16 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
+import {
+  sendApplicationEmail,
+  sendContactEmail,
+  sendForeclosedPropertyEmail,
+  sendInquiryEmail,
+  sendUserConfirmationEmail,
+} from './email.js'
+
+dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -12,137 +22,9 @@ const ADMIN_USERS_FILE = path.join(DATA_DIR, 'admin-users.json')
 const AUTH_LOG_FILE = path.join(DATA_DIR, 'auth-log.json')
 
 const PORT = Number(process.env.PORT || 4000)
-const SESSION_TTL_MS = 1000 * 60 * 60 * 8
+const SESSION_TTL_MS = 1000 * 60 * 5
 const MAX_BODY_BYTES = 35 * 1024 * 1024
 const sessions = new Map()
-
-const DEFAULT_PROPERTIES = [
-  {
-    id: 1,
-    name: 'Sunset Residences - Unit 4B',
-    type: 'Residential Condo',
-    location: 'Makati City',
-    price: 8500000,
-    size: '68 sqm',
-    bedrooms: 2,
-    bathrooms: 1,
-    features: 'High-floor, City view, Parking',
-    status: 'Available',
-  },
-  {
-    id: 2,
-    name: 'Peninsula Tower - Unit 1801',
-    type: 'Residential Condo',
-    location: 'Makati City',
-    price: 12000000,
-    size: '98 sqm',
-    bedrooms: 2,
-    bathrooms: 2,
-    features: 'Sea view, Balcony, Smart home',
-    status: 'Available',
-  },
-  {
-    id: 3,
-    name: 'Golden Hills - Lot 15',
-    type: 'House & Lot',
-    location: 'Cavite',
-    price: 5500000,
-    size: '120 sqm',
-    bedrooms: 3,
-    bathrooms: 2,
-    features: 'Modern design, Swimming pool',
-    status: 'Available',
-  },
-  {
-    id: 4,
-    name: 'Eastwood Commercial Space - 201',
-    type: 'Commercial Unit',
-    location: 'Quezon City',
-    price: 4200000,
-    size: '45 sqm',
-    bedrooms: 0,
-    bathrooms: 1,
-    features: 'Mixed-use zone, High foot traffic',
-    status: 'Available',
-  },
-  {
-    id: 5,
-    name: 'Verde Hills - Villa 3',
-    type: 'House & Lot',
-    location: 'Tagaytay',
-    price: 9800000,
-    size: '250 sqm',
-    bedrooms: 4,
-    bathrooms: 3,
-    features: 'Scenic view, Large garden, Pool',
-    status: 'Available',
-  },
-  {
-    id: 6,
-    name: 'BGC Office Tower - Floor 22',
-    type: 'Office Space',
-    location: 'Bonifacio Global City',
-    price: 15000000,
-    size: '200 sqm',
-    bedrooms: 0,
-    bathrooms: 2,
-    features: 'LEED certified, Modern infrastructure',
-    status: 'Available',
-  },
-  {
-    id: 7,
-    name: 'Jasmine Garden - Unit 5A',
-    type: 'Residential Condo',
-    location: 'Paranaque City',
-    price: 6800000,
-    size: '62 sqm',
-    bedrooms: 1,
-    bathrooms: 1,
-    features: 'Garden view, Gym access',
-    status: 'Under OCU',
-  },
-  {
-    id: 8,
-    name: 'Riverstone - Lot 8',
-    type: 'House & Lot',
-    location: 'Las Pinas',
-    price: 7200000,
-    size: '135 sqm',
-    bedrooms: 3,
-    bathrooms: 2,
-    features: 'Gated community, 24/7 security',
-    status: 'Available',
-  },
-  {
-    id: 9,
-    name: 'Cyber Park - Unit 1202',
-    type: 'Residential Condo',
-    location: 'Mandaluyong City',
-    price: 9100000,
-    size: '85 sqm',
-    bedrooms: 2,
-    bathrooms: 2,
-    features: 'Modern facilities, Near MRT',
-    status: 'Available',
-  },
-  {
-    id: 10,
-    name: 'Park Ridge - Penthouse',
-    type: 'Residential Condo',
-    location: 'Makati City',
-    price: 18500000,
-    size: '160 sqm',
-    bedrooms: 3,
-    bathrooms: 2,
-    features: 'Luxury finishes, Panoramic view',
-    status: 'Available',
-  },
-]
-
-const DEFAULT_ADMIN_USER = {
-  username: 'admin',
-  password: 'ChangeMe123!',
-}
 
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, {
@@ -398,6 +280,47 @@ async function handleRequest(req, res) {
       await writeJsonFile(PROPERTIES_FILE, properties)
       return sendJson(res, 200, { item: removed })
     }
+  }
+
+  // Email endpoints
+  if (req.method === 'POST' && pathname === '/api/send-application-email') {
+    const body = await parseBody(req)
+    const formsEmail = process.env.FORMS_EMAIL || 'admin@afcsme.com'
+
+    const result = await sendApplicationEmail(body, formsEmail)
+    await sendUserConfirmationEmail(body.email, 'application', body.fullName)
+
+    return sendJson(res, 200, result)
+  }
+
+  if (req.method === 'POST' && pathname === '/api/send-contact-email') {
+    const body = await parseBody(req)
+    const formsEmail = process.env.FORMS_EMAIL || 'admin@afcsme.com'
+
+    const result = await sendContactEmail(body, formsEmail)
+    await sendUserConfirmationEmail(body.email, 'contact', body.fullName)
+
+    return sendJson(res, 200, result)
+  }
+
+  if (req.method === 'POST' && pathname === '/api/send-inquiry-email') {
+    const body = await parseBody(req)
+    const inquiriesEmail = process.env.INQUIRIES_EMAIL || 'inquiries@afcsme.com'
+
+    const result = await sendInquiryEmail(body, inquiriesEmail)
+    await sendUserConfirmationEmail(body.email, 'inquiry', body.fullName)
+
+    return sendJson(res, 200, result)
+  }
+
+  if (req.method === 'POST' && pathname === '/api/send-foreclosed-property-email') {
+    const body = await parseBody(req)
+    const foreclosedEmail = process.env.FORECLOSED_PROPERTIES_EMAIL || 'josephleo.flores@afcsme.com.ph'
+
+    const result = await sendForeclosedPropertyEmail(body, foreclosedEmail)
+    await sendUserConfirmationEmail(body.email, 'foreclosed-property', body.fullName)
+
+    return sendJson(res, 200, result)
   }
 
   return sendJson(res, 404, { message: 'Route not found' })

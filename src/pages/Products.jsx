@@ -115,10 +115,10 @@ export default function Products() {
       {productSections.map((product) => (
         <section key={product.id} id={product.id} className="group relative py-16 scroll-mt-24 overflow-hidden">
           <div
-            className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-20 transition-transform duration-700 group-hover:scale-[1.14]"
+            className="absolute inset-0 bg-cover bg-center opacity-60"
             style={{ backgroundImage: `url(${product.image})` }}
           />
-          <div className="absolute inset-0 bg-white/85 transition-colors duration-500 group-hover:bg-white/80" />
+          <div className="absolute inset-0 bg-white/45 transition-colors duration-500 group-hover:bg-white/35" />
 
           <div className="relative max-w-6xl mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-12 items-center bg-white/70 backdrop-blur-sm rounded-3xl border border-white/60 shadow-sm p-6 md:p-8 transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-0.5">

@@ -7,3 +7,6 @@ build
 *.log
 server/data/admin-users.json
 server/data/auth-log.json
+server/.env
+.gitignore#
+tmpclaude-*

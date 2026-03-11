@@ -1,8 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
 
-// Placeholder email function
-function sendEmailNotification(formData) {
-  return { success: true, message: 'Your application has been received.' }
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+
+// Send email via backend
+async function sendApplicationEmail(formData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/send-application-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to send application')
+    }
+
+    return { success: true, message: 'Application submitted successfully!' }
+  } catch (error) {
+    console.error('Email error:', error)
+    return { success: false, message: error.message }
+  }
 }
 
 export default function ApplicationForm() {
@@ -88,12 +106,14 @@ export default function ApplicationForm() {
     if (!validateStep(4) || isLoading) return
 
     setIsLoading(true)
-    const result = sendEmailNotification(formData)
-    if (result.success) {
-      setSubmitted(true)
-    } else {
-      setIsLoading(false)
-    }
+    sendApplicationEmail(formData).then((result) => {
+      if (result.success) {
+        setSubmitted(true)
+      } else {
+        alert(`Error: ${result.message}`)
+        setIsLoading(false)
+      }
+    })
   }
 
   if (submitted) {

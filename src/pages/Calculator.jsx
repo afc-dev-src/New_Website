@@ -8,16 +8,21 @@ const moneyFormatter = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 2,
 })
 
-const TABLE_TERMS = [6, 12, 24, 36]
-const TABLE_AMOUNTS = [80000, 90000, 100000, 250000, 1000000, 3000000]
+const MIN_LOAN_AMOUNT = 100000
+const MAX_LOAN_AMOUNT = 50000000
+const MIN_TERM_MONTHS = 1
+const MAX_TERM_MONTHS = 120
 
 const formatMoney = (value) => {
   return moneyFormatter.format(Number(value) || 0)
 }
 
 const computeMonthlyPayment = (principal, months, monthlyRate) => {
-  if (months <= 0 || monthlyRate < 0) return 0
-  return ((principal * monthlyRate * months) + principal) / months
+  if (principal <= 0 || months <= 0 || monthlyRate < 0) return 0
+  if (monthlyRate === 0) return principal / months
+
+  const factor = (1 + monthlyRate) ** months
+  return (principal * monthlyRate * factor) / (factor - 1)
 }
 
 export default function Calculator() {
@@ -28,27 +33,47 @@ export default function Calculator() {
   const [paymentTable, setPaymentTable] = useState([])
 
   useEffect(() => {
-    const totalMonths = parseInt(termMonths || 0, 10)
+    const boundedLoanAmount = Math.min(Math.max(Number(loanAmount) || 0, MIN_LOAN_AMOUNT), MAX_LOAN_AMOUNT)
+    const totalMonths = Math.min(Math.max(parseInt(termMonths || 0, 10), MIN_TERM_MONTHS), MAX_TERM_MONTHS)
     const monthlyRate = Number(monthlyRatePercent) / 100
 
-    if (loanAmount <= 0 || monthlyRate < 0 || totalMonths <= 0) {
+    if (boundedLoanAmount <= 0 || monthlyRate < 0 || totalMonths <= 0) {
       setResult(null)
       setPaymentTable([])
       return
     }
 
-    const monthlyPayment = computeMonthlyPayment(loanAmount, totalMonths, monthlyRate)
-    const totalRepayment = monthlyPayment * totalMonths
+    const monthlyPayment = computeMonthlyPayment(boundedLoanAmount, totalMonths, monthlyRate)
+
+    let remainingBalance = boundedLoanAmount
+    const rows = Array.from({ length: totalMonths }, (_, index) => {
+      const month = index + 1
+      const interest = monthlyRate === 0 ? 0 : remainingBalance * monthlyRate
+      let principal = monthlyPayment - interest
+
+      // Ensure balance is fully closed on the final row despite floating-point drift.
+      if (month === totalMonths || principal > remainingBalance) {
+        principal = remainingBalance
+      }
+
+      const monthlyAmortization = principal + interest
+      remainingBalance = Math.max(0, remainingBalance - principal)
+
+      return {
+        month,
+        monthlyAmortization,
+        interest,
+        principal,
+        balance: remainingBalance,
+      }
+    })
+
+    const totalRepayment = rows.reduce((sum, row) => sum + row.monthlyAmortization, 0)
 
     setResult({
       monthlyPayment: monthlyPayment.toFixed(2),
       totalRepayment: totalRepayment.toFixed(2),
     })
-
-    const rows = TABLE_AMOUNTS.map((amount) => ({
-      amount,
-      payments: TABLE_TERMS.map((term) => computeMonthlyPayment(amount, term, monthlyRate).toFixed(2)),
-    }))
 
     setPaymentTable(rows)
   }, [loanAmount, monthlyRatePercent, termMonths])
@@ -75,18 +100,26 @@ export default function Calculator() {
                 <input
                   type="number"
                   value={loanAmount}
-                  onChange={(e) => setLoanAmount(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value)
+                    if (Number.isNaN(value)) {
+                      setLoanAmount(MIN_LOAN_AMOUNT)
+                      return
+                    }
+                    setLoanAmount(Math.min(Math.max(value, MIN_LOAN_AMOUNT), MAX_LOAN_AMOUNT))
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-red-500"
-                  min="100000"
+                  min={MIN_LOAN_AMOUNT}
+                  max={MAX_LOAN_AMOUNT}
                   step="10000"
                 />
                 <input
                   type="range"
-                  min="100000"
-                  max="50000000"
+                  min={MIN_LOAN_AMOUNT}
+                  max={MAX_LOAN_AMOUNT}
                   step="10000"
                   value={loanAmount}
-                  onChange={(e) => setLoanAmount(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setLoanAmount(parseFloat(e.target.value) || MIN_LOAN_AMOUNT)}
                   className="w-full mt-3 accent-red-600"
                 />
                 <p className="text-xs text-gray-500 mt-2">{formatMoney(loanAmount)}</p>
@@ -122,18 +155,25 @@ export default function Calculator() {
                 <input
                   type="number"
                   value={termMonths}
-                  onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value, 10)
+                    if (Number.isNaN(value)) {
+                      setTermMonths(MIN_TERM_MONTHS)
+                      return
+                    }
+                    setTermMonths(Math.min(Math.max(value, MIN_TERM_MONTHS), MAX_TERM_MONTHS))
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-red-500"
-                  min="1"
-                  max="360"
+                  min={MIN_TERM_MONTHS}
+                  max={MAX_TERM_MONTHS}
                 />
                 <input
                   type="range"
-                  min="1"
-                  max="360"
+                  min={MIN_TERM_MONTHS}
+                  max={MAX_TERM_MONTHS}
                   step="1"
                   value={termMonths}
-                  onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || MIN_TERM_MONTHS)}
                   className="w-full mt-3 accent-red-600"
                 />
                 <p className="text-xs text-gray-500 mt-2">
@@ -179,28 +219,30 @@ export default function Calculator() {
 
             {paymentTable.length > 0 && (
               <div>
-                <h3 className="text-2xl font-bold text-navy mb-4">Monthly Payment Table</h3>
+                <h3 className="text-2xl font-bold text-navy mb-4">Monthly Amortization Schedule</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border border-sky-200">
                     <thead className="bg-[#97cfdc] text-[#0f172a]">
                       <tr>
-                        <th className="border border-sky-200 p-3 text-left">Amount</th>
-                        {TABLE_TERMS.map((term) => (
-                          <th key={term} className="border border-sky-200 p-3 text-right">
-                            {term} Month
-                          </th>
-                        ))}
+                        <th className="border border-sky-200 p-3 text-left">Month</th>
+                        <th className="border border-sky-200 p-3 text-right">Monthly Amortization</th>
+                        <th className="border border-sky-200 p-3 text-right">Principal</th>
+                        <th className="border border-sky-200 p-3 text-right">Remaining Balance</th>
                       </tr>
                     </thead>
                     <tbody className="bg-[#d7edf3]">
                       {paymentTable.map((row) => (
-                        <tr key={row.amount} className="even:bg-[#cfe8ef]">
-                          <td className="border border-sky-200 p-3 font-semibold">{formatMoney(row.amount)}</td>
-                          {row.payments.map((payment, index) => (
-                            <td key={`${row.amount}-${TABLE_TERMS[index]}`} className="border border-sky-200 p-3 text-right">
-                              {formatMoney(payment)}
-                            </td>
-                          ))}
+                        <tr key={row.month} className="even:bg-[#cfe8ef]">
+                          <td className="border border-sky-200 p-3 font-semibold">Month {row.month}</td>
+                          <td className="border border-sky-200 p-3 text-right">
+                            {formatMoney(row.monthlyAmortization)}
+                          </td>
+                          <td className="border border-sky-200 p-3 text-right">
+                            {formatMoney(row.principal)}
+                          </td>
+                          <td className="border border-sky-200 p-3 text-right">
+                            {formatMoney(row.balance)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

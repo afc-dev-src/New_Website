@@ -104,7 +104,7 @@ export default function PropertyCard({ property }) {
             {showDetails ? 'Hide' : 'Details'}
           </button>
           <button
-            onClick={() => navigate('/#inquiry-form')}
+            onClick={() => navigate('/properties#foreclosed-property-form')}
             className="flex-1 px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
           >
             Inquire

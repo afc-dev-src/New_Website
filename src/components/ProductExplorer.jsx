@@ -31,32 +31,6 @@ const PROCESS_TILES = [
 export default function ProductExplorer({ middleContent = null }) {
   return (
     <div>
-      <section className="bg-[#f8fafc] py-4 md:py-5">
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
-          <div className="text-center mb-2">
-            <p className="text-[#8c93a8] text-xs md:text-sm font-semibold tracking-wider uppercase">How it works</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-            {PROCESS_TILES.map((tile) => (
-              <div
-                key={tile.id}
-                className="group min-h-[96px] md:min-h-[128px] lg:min-h-[144px] px-1 py-1 text-center rounded-xl border border-transparent transition-all duration-200 hover:-translate-y-0.5 hover:border-[#dbe3ff] hover:bg-white hover:shadow-[0_12px_24px_rgba(15,23,42,0.10)]"
-              >
-                <img
-                  src={tile.image}
-                  alt={tile.label}
-                  loading="lazy"
-                  className="mx-auto h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain transition-transform duration-200 group-hover:scale-105"
-                />
-                <p className="mt-1 text-xs md:text-sm font-bold text-[#1a1f4e] leading-tight">
-                  {tile.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section id="services" className="section-fade-in py-10 md:py-12 bg-white" data-reveal>
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-7 md:mb-8">
@@ -102,6 +76,33 @@ export default function ProductExplorer({ middleContent = null }) {
                   </Link>
                 </div>
               </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#f8fafc] py-4 md:py-5">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-2">
+            <p className="text-[#8c93a8] text-xs md:text-sm font-semibold tracking-wider uppercase">How it works</p>
+            <p className="mt-1 text-xl md:text-3xl font-bold text-[#0d2a7a]">Just this 4 simple steps</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+            {PROCESS_TILES.map((tile) => (
+              <div
+                key={tile.id}
+                className="min-h-[96px] md:min-h-[128px] lg:min-h-[144px] px-1 py-1 text-center rounded-xl border border-transparent"
+              >
+                <img
+                  src={tile.image}
+                  alt={tile.label}
+                  loading="lazy"
+                  className="mx-auto h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain"
+                />
+                <p className="mt-1 text-xs md:text-sm font-bold text-[#1a1f4e] leading-tight">
+                  {tile.label}
+                </p>
+              </div>
             ))}
           </div>
         </div>

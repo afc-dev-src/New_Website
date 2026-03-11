@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import remImage from '../Images/1.png'
 import takeoutImage from '../Images/2.png'
@@ -7,31 +7,19 @@ import acquisitionImage from '../Images/3.png'
 const slides = [
   {
     id: 1,
-    eyebrow: 'Built on Your Asset',
-    title: 'Real Estate Mortgage',
-    subtitle: 'Secure practical financing built for property buyers and growing SMEs.',
-    description: 'Flexible terms and faster evaluations for residential and commercial financing.',
-    inquireHref: '/#inquiry-form',
+    title: 'SANGLA TITULO',
     learnMoreHref: '/products#product-mortgage',
     image: remImage,
   },
   {
     id: 2,
-    eyebrow: 'Tailored Refinance',
     title: 'Real Estate Takeout',
-    subtitle: 'Move your existing loan to better terms with a clearer repayment plan.',
-    description: 'Switch to a financing structure that protects cash flow and supports expansion.',
-    inquireHref: '/#inquiry-form',
     learnMoreHref: '/products#product-takeout',
     image: takeoutImage,
   },
   {
     id: 3,
-    eyebrow: 'Growth Capital',
     title: 'Acquisition Loan',
-    subtitle: 'Acquire strategic assets and properties with the right lending partner.',
-    description: 'Structured funding for SME owners planning expansion and long-term growth.',
-    inquireHref: '/#inquiry-form',
     learnMoreHref: '/products#product-acquisition',
     image: acquisitionImage,
   },
@@ -39,18 +27,8 @@ const slides = [
 
 export default function HeroSlider() {
   const [current, setCurrent] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
   const [touchStart, setTouchStart] = useState(0)
-  const containerRef = useRef(null)
-
-  // Auto-advance slides
-  useEffect(() => {
-    if (isPaused) return
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length)
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [isPaused])
+  const autoSlideDelay = 5000
 
   const goToSlide = (index) => {
     setCurrent(index)
@@ -77,103 +55,70 @@ export default function HeroSlider() {
     if (distance < -50) prevSlide()
   }
 
-  return (
-    <div
-      ref={containerRef}
-      className="relative h-[58vh] md:h-[62vh] lg:h-[64vh] min-h-[340px] md:min-h-[420px] max-h-[620px] overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div
-        className="flex h-full w-full transition-transform duration-700 ease-in-out"
-        style={{ transform: `translateX(-${current * 100}%)` }}
-      >
-        {slides.map((s) => (
-          <div key={s.id} className="relative min-w-full h-full">
-            <div
-              className={`absolute inset-0 transition-transform duration-[2800ms] ease-out ${
-                current === s.id - 1 ? 'scale-105' : 'scale-100'
-              }`}
-              style={{
-                backgroundImage: `url(${s.image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1a1f4e]/55 via-[#1a1f4e]/18 to-transparent" />
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length)
+    }, autoSlideDelay)
 
-            <div className="relative z-10 h-full flex items-end pb-10 md:pb-14">
-              <div className="max-w-7xl mx-auto px-6 w-full">
-                <div className="max-w-2xl p-3 md:p-4">
-                  <p className="inline-block text-red-300 text-sm font-semibold tracking-wider uppercase mb-3">
-                    {s.eyebrow}
-                  </p>
-                  <h1 className="text-[clamp(1.9rem,4.2vw,3.5rem)] font-bold text-white leading-tight mb-3 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                    {s.title}
-                  </h1>
-                  <p className="text-base md:text-lg text-white/95 mb-2 leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">{s.subtitle}</p>
-                  <p
-                    className="text-sm md:text-base text-white/90 mb-5 leading-relaxed max-w-xl drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {s.description}
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Link
-                      to={s.inquireHref}
-                      className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl shadow-lg shadow-red-600/35 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-center"
-                    >
-                      Inquire Now
-                    </Link>
-                    <Link
-                      to={s.learnMoreHref}
-                      className="border border-white/45 text-white hover:bg-white hover:text-[#1a1f4e] hover:border-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl w-full sm:w-auto hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 text-center"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+    return () => clearInterval(intervalId)
+  }, [])
+
+  return (
+    <div className="w-full max-w-[1920px] mx-auto">
+      <div
+        className="relative w-full h-[80vh] md:h-[85vh] lg:h-[75vh] min-h-[420px] md:min-h-[520px] max-h-[720px] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          className="flex h-full w-full transition-transform duration-700 ease-in-out"
+          style={{ transform: `translateX(-${current * 100}%)` }}
+        >
+          {slides.map((slide) => (
+            <Link
+              key={slide.id}
+              to={slide.learnMoreHref}
+              className="block min-w-full h-full"
+              aria-label={`View ${slide.title}`}
+            >
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover object-center"
+                style={{ transform: 'scale(1.00)' }}
+                loading={slide.id === 1 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            </Link>
+          ))}
+        </div>
+
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3"
+          aria-label="Previous slide"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3"
+          aria-label="Next slide"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
-        aria-label="Previous slide"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
-        aria-label="Next slide"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+      <div className="flex justify-center gap-3 py-8">
         {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => goToSlide(idx)}
-            className={`h-2.5 rounded-full transition-all ${
-              idx === current ? 'w-8 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/75'
-            }`}
+            className={idx === current ? 'h-2.5 w-8 rounded-full bg-gray-800' : 'h-2.5 w-2.5 rounded-full bg-gray-400'}
             aria-label={`Go to slide ${idx + 1}`}
           />
         ))}

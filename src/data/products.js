@@ -8,7 +8,7 @@ import productREA from '../Images/our_products_REA.png'
 export const homeProductExplorer = [
   {
     id: 'product-mortgage',
-    title: 'Real Estate Mortgage',
+    title: 'Sangla Titulo',
     description: 'Secure financing for residential and commercial properties with transparent terms.',
     href: '/products#product-mortgage',
     thumbImage: productREM,

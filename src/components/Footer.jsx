@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import mainLogo from '../Images/logo.png'
+import npcSeal from '../Images/NPC Seal.png'
 import { CONTACT_INFO, REGULATORY_INFO } from '../constants'
 
 export default function Footer() {
@@ -81,15 +82,37 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/10 mt-10 pt-6 text-sm text-white/50 text-center">
-          <p>&copy; 2026 AFC SME Finance Inc. All rights reserved.</p>
-          <div className="mt-3">
-            <Link
-              to="/admin"
-              className="inline-block text-xs border border-white/30 text-white/80 hover:text-white hover:border-white/60 px-3 py-1.5 rounded"
+        <div className="border-t border-white/10 mt-10 pt-8">
+          <div className="mb-8 flex items-start gap-4 md:gap-5">
+            <div
+              className="shrink-0 p-2 sm:p-3"
+              style={{ width: '170px', minWidth: '170px' }}
             >
-              Admin
-            </Link>
+              <img
+                src={npcSeal}
+                alt="NPC Seal"
+                loading="lazy"
+                width="170"
+                height="240"
+                className="block mx-auto w-[170px] h-auto max-h-[240px] object-contain"
+              />
+            </div>
+            <div className="flex-1 p-6 min-w-0">
+              <p className="mt-2 text-red font-semibold">Regulatory Information</p>
+              <div className="mt-3 space-y-2 text-sm text-white/75">
+                <p>SEC Registration No. {REGULATORY_INFO.SEC_REGISTRATION_NO}</p>
+                <p>Certificate of Authority to Operate: No. {REGULATORY_INFO.CERTIFICATE_OF_AUTHORITY_NO}</p>
+                <p>
+                  Important: Kindly study the Terms and Conditions in the disclosure statement before proceeding with
+                  your loan transaction.
+                </p>
+                <p>For concerns and inquiries, reach us via {CONTACT_INFO.EMAIL} or {CONTACT_INFO.PHONE}.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-6 text-sm text-white/50 text-center">
+            <p>&copy; 2026 AFC SME Finance Inc. All rights reserved.</p>
           </div>
         </div>
       </div>

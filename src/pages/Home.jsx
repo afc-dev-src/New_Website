@@ -10,6 +10,10 @@ import whyFastProcessingImage from '../Images/WHY-Fast Processing.jpg'
 import whySecureReliableImage from '../Images/WHY- Secure and Reliable.jpg'
 import whyGuidingImage from '../Images/WHY-Guiding.jpg'
 import whyTermsImage from '../Images/WHY-Terms.jpg'
+import partner5RImage from '../Images/5R.jpg'
+import partnerPhirstImage from '../Images/PHIRST.png'
+import partnerIsocImage from '../Images/ISOC.png'
+import partnerPaImage from '../Images/PA.jpg'
 
 const differentiators = [
   {
@@ -39,12 +43,10 @@ const differentiators = [
 ]
 
 const partnerPlaceholders = [
-  { id: 'p1', name: 'Partner 01' },
-  { id: 'p2', name: 'Partner 02' },
-  { id: 'p3', name: 'Partner 03' },
-  { id: 'p4', name: 'Partner 04' },
-  { id: 'p5', name: 'Partner 05' },
-  { id: 'p6', name: 'Partner 06' },
+  { id: 'p1', name: '5R', logo: partner5RImage },
+  { id: 'p2', name: 'PHIRST', logo: partnerPhirstImage },
+  { id: 'p3', name: 'ISOC', logo: partnerIsocImage },
+  { id: 'p4', name: 'PA', logo: partnerPaImage },
 ]
 
 function HouseIcon({ className = '' }) {
@@ -289,9 +291,19 @@ export default function Home() {
                   }}
                 >
                   <div className="h-[130px] md:h-[165px] w-full rounded-2xl border border-[#dbe3ff] bg-white shadow-[0_16px_30px_rgba(26,31,78,0.10)] flex items-center justify-center">
-                    <span className="text-[#1a1f4e]/50 font-semibold text-xs md:text-sm tracking-wide uppercase">
-                      Logo Placeholder
-                    </span>
+                    {partner.logo ? (
+                      <img
+                        src={partner.logo}
+                        alt={`${partner.name} logo`}
+                        loading="lazy"
+                        decoding="async"
+                        className="max-h-[70px] md:max-h-[96px] w-auto max-w-[82%] object-contain"
+                      />
+                    ) : (
+                      <span className="text-[#1a1f4e]/50 font-semibold text-xs md:text-sm tracking-wide uppercase">
+                        Logo Placeholder
+                      </span>
+                    )}
                   </div>
                   <p className="mt-2 text-center text-[#1a1f4e]/70 font-semibold text-xs md:text-sm tracking-wide">
                     {partner.name}

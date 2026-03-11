@@ -1,7 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
 
-function sendEmailNotification(formData) {
-  return { success: true, message: 'Your message has been received.' }
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+
+// Send email via backend
+async function sendContactEmail(formData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/send-contact-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to send message')
+    }
+
+    return { success: true, message: 'Message sent successfully!' }
+  } catch (error) {
+    console.error('Email error:', error)
+    return { success: false, message: error.message }
+  }
 }
 
 export default function Contact() {
@@ -43,22 +62,24 @@ export default function Contact() {
     if (!validate() || isLoading) return
 
     setIsLoading(true)
-    const result = sendEmailNotification(formData)
-    if (result.success) {
-      setSubmitted(true)
-      setFormData({
-        fullName: '',
-        email: '',
-        subject: '',
-        message: '',
-      })
-      timeoutRef.current = setTimeout(() => {
-        setSubmitted(false)
+    sendContactEmail(formData).then((result) => {
+      if (result.success) {
+        setSubmitted(true)
+        setFormData({
+          fullName: '',
+          email: '',
+          subject: '',
+          message: '',
+        })
+        timeoutRef.current = setTimeout(() => {
+          setSubmitted(false)
+          setIsLoading(false)
+        }, 5000)
+      } else {
+        alert(`Error: ${result.message}`)
         setIsLoading(false)
-      }, 5000)
-    } else {
-      setIsLoading(false)
-    }
+      }
+    })
   }
 
   return (

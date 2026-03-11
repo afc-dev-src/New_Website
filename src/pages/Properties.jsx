@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import PropertyCard from '../components/PropertyCard'
-import { properties as allProperties } from '../data/properties'
+import ForeclosedPropertyForm from '../components/ForeclosedPropertyForm'
 import { api } from '../services/api'
 
 export default function Properties() {
-  const [properties, setProperties] = useState(allProperties)
+  const [properties, setProperties] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [filters, setFilters] = useState({
     location: '',
     type: '',
@@ -16,12 +17,19 @@ export default function Properties() {
     let ignore = false
     api.getProperties()
       .then((result) => {
-        if (!ignore && Array.isArray(result.items) && result.items.length > 0) {
-          setProperties(result.items)
+        if (!ignore) {
+          setProperties(Array.isArray(result.items) ? result.items : [])
         }
       })
       .catch(() => {
-        // Keep local fallback data for resilience.
+        if (!ignore) {
+          setProperties([])
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setIsLoading(false)
+        }
       })
     return () => {
       ignore = true
@@ -135,13 +143,19 @@ export default function Properties() {
           </div>
 
           {/* Results Count */}
-          <p className="text-gray-600 mb-6">
-            Showing <span className="font-bold">{filteredProperties.length}</span> of{' '}
-            <span className="font-bold">{properties.length}</span> properties
-          </p>
+          {!isLoading && (
+            <p className="text-gray-600 mb-6">
+              Showing <span className="font-bold">{filteredProperties.length}</span> of{' '}
+              <span className="font-bold">{properties.length}</span> properties
+            </p>
+          )}
 
           {/* Property Grid */}
-          {filteredProperties.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">Loading properties...</p>
+            </div>
+          ) : filteredProperties.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProperties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
@@ -161,6 +175,10 @@ export default function Properties() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="bg-white">
+        <ForeclosedPropertyForm />
       </section>
     </div>
   )
