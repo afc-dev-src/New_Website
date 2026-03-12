@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+import { API_BASE_URL, buildApiUrl } from '../lib/apiBaseUrl'
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim()
 const SUPABASE_PUBLISHABLE_KEY = (
@@ -15,15 +15,18 @@ const SUPABASE_FALLBACK_TO_BACKEND = String(import.meta.env.VITE_SUPABASE_FALLBA
 
 function toImageUrls(raw) {
   const fromRaw = raw.imageUrls ?? raw.image_urls ?? raw.images
+
   if (Array.isArray(fromRaw)) return fromRaw.filter(Boolean).slice(0, 10)
+
   if (typeof fromRaw === 'string') {
     try {
       const parsed = JSON.parse(fromRaw)
       if (Array.isArray(parsed)) return parsed.filter(Boolean).slice(0, 10)
     } catch {
-      // ignore
+      // ignore malformed legacy payloads
     }
   }
+
   const single = raw.imageUrl ?? raw.image_url ?? ''
   return single ? [single] : []
 }
@@ -48,6 +51,7 @@ function normalizeProperty(raw = {}) {
 
 function sanitizePropertyPayload(payload = {}) {
   const imageUrls = Array.isArray(payload.imageUrls) ? payload.imageUrls.filter(Boolean).slice(0, 10) : []
+
   return {
     name: String(payload.name || '').trim(),
     type: String(payload.type || '').trim(),
@@ -65,22 +69,28 @@ function sanitizePropertyPayload(payload = {}) {
 
 async function requestBackend(path, options = {}) {
   let response
+
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(buildApiUrl(path), {
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
       },
       ...options,
     })
-  } catch (error) {
-    throw new Error(`Cannot connect to backend (${API_BASE_URL}). Start it with: npm run api`)
+  } catch {
+    if (import.meta.env.DEV) {
+      throw new Error(`Cannot connect to backend (${API_BASE_URL}). Start it with: npm run api`)
+    }
+
+    throw new Error('Cannot connect to the website backend.')
   }
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
     throw new Error(data.message || 'Request failed')
   }
+
   return data
 }
 
@@ -101,11 +111,13 @@ async function requestSupabase(path, options = {}) {
   if (!response.ok) {
     throw new Error(data.message || data.error_description || data.error || 'Supabase request failed')
   }
+
   return data
 }
 
 async function resolveData({ supabase, backend }) {
   if (!USE_SUPABASE) return backend()
+
   try {
     return await supabase()
   } catch (error) {
@@ -119,6 +131,7 @@ async function getSupabaseProperties(token = '') {
     `/rest/v1/${encodeURIComponent(SUPABASE_PROPERTIES_TABLE)}?select=*&order=id.asc`,
     { token },
   )
+
   return { items: Array.isArray(data) ? data.map(normalizeProperty) : [] }
 }
 
@@ -129,6 +142,7 @@ async function createSupabaseProperty(token, payload) {
     headers: { Prefer: 'return=representation' },
     body: sanitizePropertyPayload(payload),
   })
+
   const item = Array.isArray(data) ? data[0] : null
   return { item: item ? normalizeProperty(item) : null }
 }
@@ -143,6 +157,7 @@ async function updateSupabaseProperty(token, id, payload) {
       body: sanitizePropertyPayload(payload),
     },
   )
+
   const item = Array.isArray(data) ? data[0] : null
   return { item: item ? normalizeProperty(item) : null }
 }
@@ -156,6 +171,7 @@ async function deleteSupabaseProperty(token, id) {
       headers: { Prefer: 'return=representation' },
     },
   )
+
   const item = Array.isArray(data) ? data[0] : null
   return { item: item ? normalizeProperty(item) : null }
 }
@@ -190,45 +206,44 @@ export const api = {
   adminLogin: async (payload) =>
     resolveData({
       supabase: () => loginSupabase(payload),
-      backend: () => requestBackend('/api/admin/login', { method: 'POST', body: JSON.stringify(payload) }),
+      backend: () => requestBackend('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
     }),
   getAdminProperties: async (token) =>
     resolveData({
       supabase: () => getSupabaseProperties(token),
-      backend: () => requestBackend('/api/admin/properties', { headers: { Authorization: `Bearer ${token}` } }),
+      backend: () => requestBackend('/api/admin/properties', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     }),
-  createProperty: async (token, payload) => {
-    return resolveData({
+  createProperty: async (token, payload) =>
+    resolveData({
       supabase: () => createSupabaseProperty(token, payload),
-      backend: () =>
-        requestBackend('/api/admin/properties', {
+      backend: () => requestBackend('/api/admin/properties', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       }),
-    })
-  },
-  updateProperty: async (token, id, payload) => {
-    return resolveData({
+    }),
+  updateProperty: async (token, id, payload) =>
+    resolveData({
       supabase: () => updateSupabaseProperty(token, id, payload),
-      backend: () =>
-        requestBackend(`/api/admin/properties/${id}`, {
+      backend: () => requestBackend(`/api/admin/properties/${id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       }),
-    })
-  },
-  deleteProperty: async (token, id) => {
-    return resolveData({
+    }),
+  deleteProperty: async (token, id) =>
+    resolveData({
       supabase: () => deleteSupabaseProperty(token, id),
-      backend: () =>
-        requestBackend(`/api/admin/properties/${id}`, {
+      backend: () => requestBackend(`/api/admin/properties/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       }),
-    })
-  },
+    }),
   getAuthLogs: async (token) =>
     resolveData({
       supabase: async () => {
@@ -238,8 +253,7 @@ export const api = {
         )
         return { items: Array.isArray(data) ? data : [] }
       },
-      backend: () =>
-        requestBackend('/api/admin/auth-logs', {
+      backend: () => requestBackend('/api/admin/auth-logs', {
         headers: { Authorization: `Bearer ${token}` },
       }),
     }),

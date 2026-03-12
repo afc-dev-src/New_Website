@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+import { buildApiUrl } from '../lib/apiBaseUrl'
 
 async function sendForeclosedPropertyEmail(formData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/send-foreclosed-property-email`, {
+    const response = await fetch(buildApiUrl('/api/send-foreclosed-property-email'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

@@ -3,179 +3,217 @@ import nodemailer from 'nodemailer'
 
 dotenv.config()
 
-const EMAIL_USER = process.env.EMAIL_USER || 'your-gmail@gmail.com'
-const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || 'app-password'
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@afcsme.com'
-const ADMIN_CC_EMAIL = process.env.FORMS_CC_EMAIL || ''
+const EMAIL_USER = (process.env.EMAIL_USER || '').trim()
+const EMAIL_PASSWORD = (process.env.EMAIL_PASSWORD || '').trim()
+const EMAIL_FROM = (process.env.EMAIL_FROM || 'noreply@afcsme.com').trim()
+const ADMIN_CC_EMAIL = (process.env.FORMS_CC_EMAIL || '').trim()
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASSWORD,
-  },
+const currencyFormatter = new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP',
+  maximumFractionDigits: 0,
 })
 
-/**
- * Send application form email
- */
+let transporter = null
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (character) => (
+    {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[character] || character
+  ))
+}
+
+function formatText(value, fallback = 'N/A') {
+  const text = String(value ?? '').trim()
+  return text ? escapeHtml(text) : fallback
+}
+
+function formatParagraph(value, fallback = 'No message provided.') {
+  const text = String(value ?? '').replace(/\r\n?/g, '\n').trim()
+  return text ? escapeHtml(text).replace(/\n/g, '<br>') : fallback
+}
+
+function formatCurrency(value) {
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount > 0 ? currencyFormatter.format(amount) : 'N/A'
+}
+
+function hasEmailConfig() {
+  return Boolean(
+    EMAIL_USER &&
+    EMAIL_PASSWORD &&
+    !EMAIL_USER.includes('your-gmail') &&
+    !EMAIL_PASSWORD.includes('app-password'),
+  )
+}
+
+function getTransporter() {
+  if (!hasEmailConfig()) {
+    return null
+  }
+
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASSWORD,
+      },
+    })
+  }
+
+  return transporter
+}
+
+async function sendMail(options) {
+  const mailer = getTransporter()
+
+  if (!mailer) {
+    return {
+      success: false,
+      message: 'Email service is not configured. Set EMAIL_USER and EMAIL_PASSWORD before deploying.',
+    }
+  }
+
+  try {
+    await mailer.sendMail(options)
+    return { success: true, message: 'Email sent successfully.' }
+  } catch (error) {
+    console.error('Email sending error:', error)
+    return { success: false, message: `Failed to send email: ${error.message}` }
+  }
+}
+
+function renderLayout(title, body) {
+  return `
+    <div style="font-family: Arial, sans-serif; color: #1a1f4e; line-height: 1.6;">
+      <h2 style="margin-bottom: 12px;">${escapeHtml(title)}</h2>
+      <div style="border-top: 1px solid #dbe3ff; padding-top: 16px;">
+        ${body}
+      </div>
+    </div>
+  `
+}
+
 export async function sendApplicationEmail(formData, recipientEmail) {
-  const emailContent = `
-    <h2>New Loan Application Received</h2>
-    <hr>
-    <h3>Personal Information</h3>
-    <p><strong>Full Name:</strong> ${formData.fullName}</p>
-    <p><strong>Email:</strong> ${formData.email}</p>
-    <p><strong>Mobile:</strong> ${formData.mobile}</p>
-    <p><strong>ID Type:</strong> ${formData.idType}</p>
-    <p><strong>ID Number:</strong> ${formData.idNumber}</p>
+  const emailContent = renderLayout(
+    'New Loan Application Received',
+    `
+      <h3>Personal Information</h3>
+      <p><strong>Full Name:</strong> ${formatText(formData.fullName)}</p>
+      <p><strong>Email:</strong> ${formatText(formData.email)}</p>
+      <p><strong>Mobile:</strong> ${formatText(formData.mobile)}</p>
+      <p><strong>ID Type:</strong> ${formatText(formData.idType)}</p>
+      <p><strong>ID Number:</strong> ${formatText(formData.idNumber)}</p>
 
-    <h3>Property Information</h3>
-    <p><strong>Property Type:</strong> ${formData.propertyType}</p>
-    <p><strong>Location:</strong> ${formData.propertyLocation}</p>
-    <p><strong>Price:</strong> ₱${Number(formData.propertyPrice).toLocaleString()}</p>
+      <h3>Property Information</h3>
+      <p><strong>Property Type:</strong> ${formatText(formData.propertyType)}</p>
+      <p><strong>Location:</strong> ${formatText(formData.propertyLocation)}</p>
+      <p><strong>Price:</strong> ${formatCurrency(formData.propertyPrice)}</p>
 
-    <h3>Loan Information</h3>
-    <p><strong>Loan Amount:</strong> ₱${Number(formData.loanAmount).toLocaleString()}</p>
-    <p><strong>Loan Purpose:</strong> ${formData.loanPurpose}</p>
-    <p><strong>Loan Term:</strong> ${formData.loanTerm} years</p>
-    <p><strong>Product Interested:</strong> ${formData.productInterested}</p>
+      <h3>Loan Information</h3>
+      <p><strong>Loan Amount:</strong> ${formatCurrency(formData.loanAmount)}</p>
+      <p><strong>Loan Purpose:</strong> ${formatText(formData.loanPurpose)}</p>
+      <p><strong>Loan Term:</strong> ${formatText(formData.loanTerm)} months</p>
+      <p><strong>Product Interested:</strong> ${formatText(formData.productInterested)}</p>
 
-    <h3>Employment Information</h3>
-    <p><strong>Employment Status:</strong> ${formData.employmentStatus}</p>
-    <p><strong>Employer:</strong> ${formData.employer || 'N/A'}</p>
-    <p><strong>Position:</strong> ${formData.position || 'N/A'}</p>
-    <p><strong>Monthly Income:</strong> ₱${Number(formData.monthlyIncome).toLocaleString()}</p>
+      <h3>Employment Information</h3>
+      <p><strong>Employment Status:</strong> ${formatText(formData.employmentStatus)}</p>
+      <p><strong>Employer:</strong> ${formatText(formData.employer)}</p>
+      <p><strong>Position:</strong> ${formatText(formData.position)}</p>
+      <p><strong>Monthly Income:</strong> ${formatCurrency(formData.monthlyIncome)}</p>
 
-    <hr>
-    <p>Submitted on: ${new Date().toLocaleString()}</p>
-  `
+      <p><strong>Submitted on:</strong> ${escapeHtml(new Date().toLocaleString('en-PH'))}</p>
+    `,
+  )
 
-  try {
-    await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: recipientEmail,
-      cc: ADMIN_CC_EMAIL || undefined,
-      replyTo: formData.email,
-      subject: `New Loan Application - ${formData.fullName}`,
-      html: emailContent,
-    })
-    return { success: true, message: 'Email sent successfully' }
-  } catch (error) {
-    console.error('Email sending error:', error)
-    return { success: false, message: `Failed to send email: ${error.message}` }
-  }
+  return sendMail({
+    from: EMAIL_FROM,
+    to: recipientEmail,
+    cc: ADMIN_CC_EMAIL || undefined,
+    replyTo: formData.email,
+    subject: `New Loan Application - ${String(formData.fullName || '').trim() || 'Applicant'}`,
+    html: emailContent,
+  })
 }
 
-/**
- * Send contact form email
- */
 export async function sendContactEmail(formData, recipientEmail) {
-  const emailContent = `
-    <h2>New Contact Form Submission</h2>
-    <hr>
-    <p><strong>Name:</strong> ${formData.fullName}</p>
-    <p><strong>Email:</strong> ${formData.email}</p>
-    <p><strong>Subject:</strong> ${formData.subject}</p>
+  const emailContent = renderLayout(
+    'New Contact Form Submission',
+    `
+      <p><strong>Name:</strong> ${formatText(formData.fullName)}</p>
+      <p><strong>Email:</strong> ${formatText(formData.email)}</p>
+      <p><strong>Subject:</strong> ${formatText(formData.subject)}</p>
+      <h3>Message</h3>
+      <p>${formatParagraph(formData.message)}</p>
+      <p><strong>Submitted on:</strong> ${escapeHtml(new Date().toLocaleString('en-PH'))}</p>
+    `,
+  )
 
-    <h3>Message:</h3>
-    <p>${formData.message.replace(/\n/g, '<br>')}</p>
-
-    <hr>
-    <p>Submitted on: ${new Date().toLocaleString()}</p>
-  `
-
-  try {
-    await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: recipientEmail,
-      cc: ADMIN_CC_EMAIL || undefined,
-      replyTo: formData.email,
-      subject: `Contact Form - ${formData.subject}`,
-      html: emailContent,
-    })
-    return { success: true, message: 'Email sent successfully' }
-  } catch (error) {
-    console.error('Email sending error:', error)
-    return { success: false, message: `Failed to send email: ${error.message}` }
-  }
+  return sendMail({
+    from: EMAIL_FROM,
+    to: recipientEmail,
+    cc: ADMIN_CC_EMAIL || undefined,
+    replyTo: formData.email,
+    subject: `Contact Form - ${String(formData.subject || '').trim() || 'General Inquiry'}`,
+    html: emailContent,
+  })
 }
 
-/**
- * Send inquiry form email
- */
 export async function sendInquiryEmail(formData, recipientEmail) {
-  const emailContent = `
-    <h2>New Inquiry Received</h2>
-    <hr>
-    <p><strong>Name:</strong> ${formData.fullName}</p>
-    <p><strong>Email:</strong> ${formData.email}</p>
-    <p><strong>Mobile:</strong> ${formData.mobile}</p>
-    <p><strong>Location:</strong> ${formData.location}</p>
-    <p><strong>Product Interested:</strong> ${formData.productInterested}</p>
+  const emailContent = renderLayout(
+    'New Inquiry Received',
+    `
+      <p><strong>Name:</strong> ${formatText(formData.fullName)}</p>
+      <p><strong>Email:</strong> ${formatText(formData.email)}</p>
+      <p><strong>Mobile:</strong> ${formatText(formData.mobile)}</p>
+      <p><strong>Location:</strong> ${formatText(formData.location)}</p>
+      <p><strong>Product Interested:</strong> ${formatText(formData.productInterested)}</p>
+      <h3>Message</h3>
+      <p>${formatParagraph(formData.message)}</p>
+      <p><strong>Submitted on:</strong> ${escapeHtml(new Date().toLocaleString('en-PH'))}</p>
+    `,
+  )
 
-    <h3>Message:</h3>
-    <p>${formData.message ? formData.message.replace(/\n/g, '<br>') : 'No message provided'}</p>
-
-    <hr>
-    <p>Submitted on: ${new Date().toLocaleString()}</p>
-  `
-
-  try {
-    await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: recipientEmail,
-      cc: ADMIN_CC_EMAIL || undefined,
-      replyTo: formData.email,
-      subject: `New Inquiry - ${formData.productInterested}`,
-      html: emailContent,
-    })
-    return { success: true, message: 'Email sent successfully' }
-  } catch (error) {
-    console.error('Email sending error:', error)
-    return { success: false, message: `Failed to send email: ${error.message}` }
-  }
+  return sendMail({
+    from: EMAIL_FROM,
+    to: recipientEmail,
+    cc: ADMIN_CC_EMAIL || undefined,
+    replyTo: formData.email,
+    subject: `New Inquiry - ${String(formData.productInterested || '').trim() || 'Website Inquiry'}`,
+    html: emailContent,
+  })
 }
 
-/**
- * Send foreclosed property inquiry form email
- */
 export async function sendForeclosedPropertyEmail(formData, recipientEmail) {
-  const emailContent = `
-    <h2>New Foreclosed Property Inquiry</h2>
-    <hr>
-    <p><strong>Name:</strong> ${formData.fullName}</p>
-    <p><strong>Email:</strong> ${formData.email}</p>
-    <p><strong>Mobile:</strong> ${formData.mobile}</p>
-    <p><strong>Property Interested In:</strong> ${formData.propertyInterested || 'Not specified'}</p>
+  const emailContent = renderLayout(
+    'New Foreclosed Property Inquiry',
+    `
+      <p><strong>Name:</strong> ${formatText(formData.fullName)}</p>
+      <p><strong>Email:</strong> ${formatText(formData.email)}</p>
+      <p><strong>Mobile:</strong> ${formatText(formData.mobile)}</p>
+      <p><strong>Property Interested In:</strong> ${formatText(formData.propertyInterested)}</p>
+      <h3>Message</h3>
+      <p>${formatParagraph(formData.message)}</p>
+      <p><strong>Submitted on:</strong> ${escapeHtml(new Date().toLocaleString('en-PH'))}</p>
+    `,
+  )
 
-    <h3>Message:</h3>
-    <p>${formData.message ? formData.message.replace(/\n/g, '<br>') : 'No message provided'}</p>
-
-    <hr>
-    <p>Submitted on: ${new Date().toLocaleString()}</p>
-  `
-
-  try {
-    await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: recipientEmail,
-      cc: ADMIN_CC_EMAIL || undefined,
-      replyTo: formData.email,
-      subject: `Foreclosed Property Inquiry - ${formData.fullName}`,
-      html: emailContent,
-    })
-    return { success: true, message: 'Email sent successfully' }
-  } catch (error) {
-    console.error('Email sending error:', error)
-    return { success: false, message: `Failed to send email: ${error.message}` }
-  }
+  return sendMail({
+    from: EMAIL_FROM,
+    to: recipientEmail,
+    cc: ADMIN_CC_EMAIL || undefined,
+    replyTo: formData.email,
+    subject: `Foreclosed Property Inquiry - ${String(formData.fullName || '').trim() || 'Website Lead'}`,
+    html: emailContent,
+  })
 }
 
-/**
- * Send confirmation email to user
- */
 export async function sendUserConfirmationEmail(userEmail, type, userName) {
   const subject = type === 'application'
     ? 'Loan Application Received'
@@ -184,6 +222,7 @@ export async function sendUserConfirmationEmail(userEmail, type, userName) {
       : type === 'foreclosed-property'
         ? 'Foreclosed Property Inquiry Received'
         : 'Inquiry Received'
+
   const message = type === 'application'
     ? 'Thank you for submitting your loan application. Our team will review it and contact you within 24 hours.'
     : type === 'contact'
@@ -192,24 +231,19 @@ export async function sendUserConfirmationEmail(userEmail, type, userName) {
         ? 'Thank you for your foreclosed property inquiry. Our team will contact you shortly.'
         : 'Thank you for your inquiry. Our team will be in touch shortly.'
 
-  const emailContent = `
-    <h2>${subject}</h2>
-    <p>Dear ${userName},</p>
-    <p>${message}</p>
-    <br/>
-    <p>Best regards,<br/>AFC SME Finance Team</p>
-  `
+  const emailContent = renderLayout(
+    subject,
+    `
+      <p>Dear ${formatText(userName, 'Customer')},</p>
+      <p>${escapeHtml(message)}</p>
+      <p>Best regards,<br>AFC SME Finance Team</p>
+    `,
+  )
 
-  try {
-    await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: userEmail,
-      subject,
-      html: emailContent,
-    })
-    return { success: true }
-  } catch (error) {
-    console.error('User confirmation email error:', error)
-    return { success: false }
-  }
+  return sendMail({
+    from: EMAIL_FROM,
+    to: userEmail,
+    subject,
+    html: emailContent,
+  })
 }

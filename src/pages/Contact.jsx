@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+import { buildApiUrl } from '../lib/apiBaseUrl'
 
 // Send email via backend
 async function sendContactEmail(formData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/send-contact-email`, {
+    const response = await fetch(buildApiUrl('/api/send-contact-email'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

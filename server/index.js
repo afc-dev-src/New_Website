@@ -21,17 +21,106 @@ const PROPERTIES_FILE = path.join(DATA_DIR, 'properties.json')
 const ADMIN_USERS_FILE = path.join(DATA_DIR, 'admin-users.json')
 const AUTH_LOG_FILE = path.join(DATA_DIR, 'auth-log.json')
 
-const PORT = Number(process.env.PORT || 4000)
-const SESSION_TTL_MS = 1000 * 60 * 5
-const MAX_BODY_BYTES = 35 * 1024 * 1024
-const sessions = new Map()
+const DEFAULT_DEV_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+const PRODUCT_OPTIONS = new Set(['Real Estate Mortgage', 'Real Estate Takeout', 'Acquisition Loan'])
+const PROPERTY_PLACEHOLDER_URL = '/images/property-placeholder.svg'
+const MAX_PROPERTY_IMAGES = 10
 
-function sendJson(res, statusCode, payload) {
-  res.writeHead(statusCode, {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+const PORT = readPositiveInteger(process.env.PORT, 4000, 1)
+const NODE_ENV = String(process.env.NODE_ENV || 'development').trim().toLowerCase()
+const SESSION_TTL_MS = readPositiveInteger(process.env.SESSION_TTL_MS, 1000 * 60 * 30, 60_000)
+const MAX_BODY_BYTES = readPositiveInteger(process.env.MAX_BODY_BYTES, 2 * 1024 * 1024, 32_768)
+const MAX_PROPERTY_IMAGE_URL_LENGTH = readPositiveInteger(process.env.MAX_PROPERTY_IMAGE_URL_LENGTH, 2048, 256)
+const MAX_LEGACY_DATA_URL_LENGTH = readPositiveInteger(process.env.MAX_LEGACY_DATA_URL_LENGTH, 64 * 1024, 4096)
+const LOGIN_RATE_LIMIT_MAX = readPositiveInteger(process.env.LOGIN_RATE_LIMIT_MAX, 5, 1)
+const LOGIN_RATE_LIMIT_WINDOW_MS = readPositiveInteger(process.env.LOGIN_RATE_LIMIT_WINDOW_MS, 1000 * 60 * 15, 1000)
+const FORM_RATE_LIMIT_MAX = readPositiveInteger(process.env.FORM_RATE_LIMIT_MAX, 8, 1)
+const FORM_RATE_LIMIT_WINDOW_MS = readPositiveInteger(process.env.FORM_RATE_LIMIT_WINDOW_MS, 1000 * 60 * 10, 1000)
+const ADMIN_MUTATION_RATE_LIMIT_MAX = readPositiveInteger(process.env.ADMIN_MUTATION_RATE_LIMIT_MAX, 30, 1)
+const ADMIN_MUTATION_RATE_LIMIT_WINDOW_MS = readPositiveInteger(process.env.ADMIN_MUTATION_RATE_LIMIT_WINDOW_MS, 1000 * 60, 1000)
+const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS)
+
+const sessions = new Map()
+const rateLimitStore = new Map()
+
+function readPositiveInteger(value, fallback, minimum) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= minimum ? Math.floor(parsed) : fallback
+}
+
+function parseAllowedOrigins(value) {
+  const configuredOrigins = String(value || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  if (configuredOrigins.length > 0) {
+    return new Set(configuredOrigins)
+  }
+
+  return NODE_ENV === 'production' ? new Set() : new Set(DEFAULT_DEV_ORIGINS)
+}
+
+function makeHttpError(statusCode, message, headers = {}) {
+  const error = new Error(message)
+  error.statusCode = statusCode
+  error.headers = headers
+  return error
+}
+
+function getClientIp(req) {
+  const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+  return forwardedFor || req.socket.remoteAddress || 'unknown'
+}
+
+function getRequestOrigin(req) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim()
+  const protocol = forwardedProto || 'http'
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').trim()
+  return host ? `${protocol}://${host}` : ''
+}
+
+function isAllowedOrigin(req, origin) {
+  if (!origin) return true
+  if (ALLOWED_ORIGINS.has(origin)) return true
+  return origin === getRequestOrigin(req)
+}
+
+function assertCorsAllowed(req) {
+  const origin = String(req.headers.origin || '').trim()
+  if (origin && !isAllowedOrigin(req, origin)) {
+    throw makeHttpError(403, 'Origin not allowed.')
+  }
+}
+
+function getResponseHeaders(req, pathname) {
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Max-Age': '86400',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  }
+
+  const origin = String(req.headers.origin || '').trim()
+  if (origin && isAllowedOrigin(req, origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+    headers.Vary = 'Origin'
+  }
+
+  if (pathname.startsWith('/api/admin')) {
+    headers['Cache-Control'] = 'no-store'
+  }
+
+  return headers
+}
+
+function sendJson(req, res, statusCode, payload, pathname, extraHeaders = {}) {
+  res.writeHead(statusCode, {
+    ...getResponseHeaders(req, pathname),
+    ...extraHeaders,
   })
   res.end(JSON.stringify(payload))
 }
@@ -58,165 +147,516 @@ async function readJsonFile(filePath, fallbackValue) {
 }
 
 async function writeJsonFile(filePath, data) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true })
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
+  try {
+    await fs.mkdir(path.dirname(filePath), { recursive: true })
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
+  } catch (error) {
+    if (['EROFS', 'EPERM', 'EACCES'].includes(error.code)) {
+      throw makeHttpError(
+        503,
+        'Server data storage is not writable. Use persistent storage or move data to a database before deploying.',
+      )
+    }
+
+    throw error
+  }
 }
 
-async function bootstrapData() {
-  const properties = await readJsonFile(PROPERTIES_FILE, null)
-  if (!properties) await writeJsonFile(PROPERTIES_FILE, DEFAULT_PROPERTIES)
+function normalizeWhitespace(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim()
+}
 
-  const adminUsers = await readJsonFile(ADMIN_USERS_FILE, null)
-  if (!adminUsers) {
-    const passwordHash = hashPassword(DEFAULT_ADMIN_USER.password)
-    await writeJsonFile(ADMIN_USERS_FILE, [
-      { username: DEFAULT_ADMIN_USER.username, ...passwordHash },
-    ])
-    console.log('Created default admin user: admin / ChangeMe123! (Change this immediately)')
+function sanitizeSingleLine(value, maxLength = 160) {
+  return normalizeWhitespace(value).slice(0, maxLength)
+}
+
+function sanitizeMultiline(value, maxLength = 2000) {
+  return String(value ?? '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => normalizeWhitespace(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, maxLength)
+}
+
+function sanitizeEmail(value) {
+  return String(value ?? '').trim().toLowerCase().slice(0, 254)
+}
+
+function sanitizePhone(value) {
+  return String(value ?? '')
+    .replace(/[^\d+()\-\s]/g, '')
+    .trim()
+    .slice(0, 32)
+}
+
+function sanitizeBoolean(value) {
+  return value === true || value === 'true' || value === 'on' || value === 1 || value === '1'
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function isValidPhone(value) {
+  return /^[+\d()[\]\-\s]{7,20}$/.test(value)
+}
+
+function parseMoney(value) {
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : 0
+}
+
+function parseWholeNumber(value, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback
+}
+
+function parsePropertyId(value) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : Date.now()
+}
+
+function isHostedImageUrl(value) {
+  return Boolean(value) &&
+    value.length <= MAX_PROPERTY_IMAGE_URL_LENGTH &&
+    (value.startsWith('/') || /^https?:\/\//i.test(value))
+}
+
+function isLegacyImageDataUrl(value) {
+  return /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value) && value.length <= MAX_LEGACY_DATA_URL_LENGTH
+}
+
+function collectImageCandidates(inputImageUrls, fallbackImageUrl = '') {
+  if (Array.isArray(inputImageUrls)) {
+    return inputImageUrls
   }
 
-  const authLogs = await readJsonFile(AUTH_LOG_FILE, null)
-  if (!authLogs) await writeJsonFile(AUTH_LOG_FILE, [])
+  if (fallbackImageUrl) {
+    return [fallbackImageUrl]
+  }
+
+  return []
 }
 
-function parseBody(req) {
-  return new Promise((resolve, reject) => {
-    let raw = ''
-    let tooLarge = false
-    req.on('data', (chunk) => {
-      if (tooLarge) return
-      raw += chunk
-      if (raw.length > MAX_BODY_BYTES) {
-        tooLarge = true
-      }
-    })
-    req.on('end', () => {
-      if (tooLarge) {
-        const error = new Error('Request payload too large. Upload fewer/smaller images.')
-        error.statusCode = 413
-        return reject(error)
-      }
-      if (!raw) return resolve({})
-      try {
-        resolve(JSON.parse(raw))
-      } catch (error) {
-        reject(new Error('Invalid JSON body'))
-      }
-    })
-    req.on('error', reject)
-  })
-}
+function normalizeImageUrls(inputImageUrls, fallbackImageUrl = '', { allowLegacyDataUrl = false } = {}) {
+  const unique = new Set()
 
-function normalizeImageUrls(inputImageUrls, fallbackImageUrl = '') {
-  const source = Array.isArray(inputImageUrls)
-    ? inputImageUrls
-    : fallbackImageUrl
-      ? [fallbackImageUrl]
-      : []
-
-  const cleaned = source
+  return collectImageCandidates(inputImageUrls, fallbackImageUrl)
     .map((item) => String(item || '').trim())
-    .filter(Boolean)
-    .slice(0, 10)
+    .filter((item) => {
+      if (!item) return false
 
-  return cleaned
+      const isSafe = isHostedImageUrl(item) || (allowLegacyDataUrl && isLegacyImageDataUrl(item))
+      if (!isSafe || unique.has(item)) return false
+
+      unique.add(item)
+      return true
+    })
+    .slice(0, MAX_PROPERTY_IMAGES)
 }
 
-function getBearerToken(req) {
-  const auth = req.headers.authorization || ''
-  if (!auth.startsWith('Bearer ')) return ''
-  return auth.slice('Bearer '.length)
+function sanitizeStatus(value) {
+  const status = sanitizeSingleLine(value || 'Available', 40)
+  return status || 'Available'
 }
 
-function getSession(req) {
-  const token = getBearerToken(req)
-  if (!token) return null
-  const session = sessions.get(token)
-  if (!session) return null
-  if (Date.now() > session.expiresAt) {
-    sessions.delete(token)
-    return null
-  }
-  return session
-}
-
-async function appendAuthLog(entry) {
-  const currentLogs = await readJsonFile(AUTH_LOG_FILE, [])
-  currentLogs.push(entry)
-  await writeJsonFile(AUTH_LOG_FILE, currentLogs.slice(-500))
-}
-
-function sanitizeProperty(input, existing = {}) {
-  const imageUrls = normalizeImageUrls(input.imageUrls, input.imageUrl || existing.imageUrl || '')
+function sanitizeProperty(input = {}, existing = {}, options = {}) {
+  const fallbackImageUrl = input.imageUrl || existing.imageUrl || ''
+  const incomingImages = collectImageCandidates(input.imageUrls, fallbackImageUrl)
+  const imageUrls = normalizeImageUrls(input.imageUrls, fallbackImageUrl, {
+    allowLegacyDataUrl: options.allowLegacyDataUrl,
+  })
+  const shouldUsePlaceholder = options.usePlaceholderForInvalidImages && incomingImages.length > 0 && imageUrls.length === 0
+  const finalImageUrls = shouldUsePlaceholder ? [PROPERTY_PLACEHOLDER_URL] : imageUrls
 
   return {
-    id: existing.id ?? Date.now(),
-    name: String(input.name || existing.name || '').trim(),
-    type: String(input.type || existing.type || '').trim(),
-    location: String(input.location || existing.location || '').trim(),
-    price: Number(input.price ?? existing.price ?? 0),
-    size: String(input.size || existing.size || '').trim(),
-    bedrooms: Number(input.bedrooms ?? existing.bedrooms ?? 0),
-    bathrooms: Number(input.bathrooms ?? existing.bathrooms ?? 0),
-    features: String(input.features || existing.features || '').trim(),
-    status: String(input.status || existing.status || 'Available').trim(),
-    imageUrls,
-    imageUrl: imageUrls[0] || '',
+    id: parsePropertyId(existing.id ?? input.id),
+    name: sanitizeSingleLine(input.name ?? existing.name, 160),
+    type: sanitizeSingleLine(input.type ?? existing.type, 120),
+    location: sanitizeSingleLine(input.location ?? existing.location, 160),
+    price: parseMoney(input.price ?? existing.price),
+    size: sanitizeSingleLine(input.size ?? existing.size, 64),
+    bedrooms: parseWholeNumber(input.bedrooms ?? existing.bedrooms),
+    bathrooms: parseWholeNumber(input.bathrooms ?? existing.bathrooms),
+    features: sanitizeMultiline(input.features ?? existing.features, 600),
+    status: sanitizeStatus(input.status ?? existing.status),
+    imageUrls: finalImageUrls,
+    imageUrl: finalImageUrls[0] || '',
   }
 }
 
 function validateProperty(property) {
   const requiredTextFields = ['name', 'type', 'location', 'size', 'features', 'status']
   for (const field of requiredTextFields) {
-    if (!property[field]) return `${field} is required`
+    if (!property[field]) {
+      return `${field} is required`
+    }
   }
+
   if (!Number.isFinite(property.price) || property.price <= 0) return 'price must be greater than 0'
   if (!Number.isInteger(property.bedrooms) || property.bedrooms < 0) return 'bedrooms must be 0 or more'
   if (!Number.isInteger(property.bathrooms) || property.bathrooms < 0) return 'bathrooms must be 0 or more'
-  if (Array.isArray(property.imageUrls) && property.imageUrls.length > 10) return 'Maximum of 10 images per property.'
+  if (property.imageUrls.length > MAX_PROPERTY_IMAGES) return `Maximum of ${MAX_PROPERTY_IMAGES} images per property.`
+  if (property.imageUrls.some((url) => !isHostedImageUrl(url))) {
+    return 'Property images must use hosted URLs or site-relative paths.'
+  }
+
   return ''
+}
+
+function sanitizeStoredAdminUsers(users) {
+  const unique = new Set()
+
+  return users
+    .filter((user) => user && typeof user === 'object')
+    .map((user) => ({
+      username: sanitizeSingleLine(user.username, 254).toLowerCase(),
+      salt: String(user.salt || '').trim(),
+      hash: String(user.hash || '').trim(),
+    }))
+    .filter((user) => user.username && user.salt && user.hash && !unique.has(user.username) && unique.add(user.username))
+}
+
+function sanitizeAuthLogEntry(entry = {}) {
+  const timestamp = new Date(entry.timestamp || Date.now())
+
+  return {
+    timestamp: Number.isNaN(timestamp.getTime()) ? new Date().toISOString() : timestamp.toISOString(),
+    username: sanitizeSingleLine(entry.username, 254),
+    success: Boolean(entry.success),
+    ip: sanitizeSingleLine(entry.ip, 128),
+    userAgent: sanitizeSingleLine(entry.userAgent, 400),
+  }
+}
+
+function getBootstrapAdminUser() {
+  const username = sanitizeSingleLine(process.env.ADMIN_BOOTSTRAP_USERNAME, 254).toLowerCase()
+  const password = String(process.env.ADMIN_BOOTSTRAP_PASSWORD || '')
+
+  if (!username || password.length < 12) {
+    return null
+  }
+
+  return { username, password }
+}
+
+async function bootstrapData() {
+  await fs.mkdir(DATA_DIR, { recursive: true })
+
+  const rawProperties = await readJsonFile(PROPERTIES_FILE, null)
+  const sanitizedProperties = Array.isArray(rawProperties)
+    ? rawProperties.map((property) => sanitizeProperty(property, {}, {
+      allowLegacyDataUrl: false,
+      usePlaceholderForInvalidImages: true,
+    }))
+    : []
+
+  if (!Array.isArray(rawProperties) || JSON.stringify(rawProperties) !== JSON.stringify(sanitizedProperties)) {
+    await writeJsonFile(PROPERTIES_FILE, sanitizedProperties)
+  }
+
+  const rawAdminUsers = await readJsonFile(ADMIN_USERS_FILE, null)
+  let adminUsers = sanitizeStoredAdminUsers(Array.isArray(rawAdminUsers) ? rawAdminUsers : [])
+
+  if (adminUsers.length === 0) {
+    const bootstrapAdmin = getBootstrapAdminUser()
+    if (bootstrapAdmin) {
+      adminUsers = [
+        {
+          username: bootstrapAdmin.username,
+          ...hashPassword(bootstrapAdmin.password),
+        },
+      ]
+      console.log('Created bootstrap admin user from environment.')
+    } else {
+      console.warn(
+        'No admin users provisioned. Set ADMIN_BOOTSTRAP_USERNAME and ADMIN_BOOTSTRAP_PASSWORD or provide server/data/admin-users.json before deploying.',
+      )
+    }
+  }
+
+  if (!Array.isArray(rawAdminUsers) || JSON.stringify(rawAdminUsers) !== JSON.stringify(adminUsers)) {
+    await writeJsonFile(ADMIN_USERS_FILE, adminUsers)
+  }
+
+  const rawAuthLogs = await readJsonFile(AUTH_LOG_FILE, null)
+  const authLogs = Array.isArray(rawAuthLogs)
+    ? rawAuthLogs.slice(-500).map((entry) => sanitizeAuthLogEntry(entry))
+    : []
+
+  if (!Array.isArray(rawAuthLogs) || JSON.stringify(rawAuthLogs) !== JSON.stringify(authLogs)) {
+    await writeJsonFile(AUTH_LOG_FILE, authLogs)
+  }
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let byteLength = 0
+
+    req.on('data', (chunk) => {
+      byteLength += chunk.length
+
+      if (byteLength > MAX_BODY_BYTES) {
+        reject(makeHttpError(413, 'Request payload too large.'))
+        req.destroy()
+        return
+      }
+
+      chunks.push(chunk)
+    })
+
+    req.on('end', () => {
+      if (chunks.length === 0) {
+        resolve({})
+        return
+      }
+
+      try {
+        const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+        if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+          reject(makeHttpError(400, 'JSON body must be an object.'))
+          return
+        }
+
+        resolve(parsed)
+      } catch {
+        reject(makeHttpError(400, 'Invalid JSON body.'))
+      }
+    })
+
+    req.on('error', reject)
+  })
+}
+
+function getBearerToken(req) {
+  const auth = String(req.headers.authorization || '')
+  if (!auth.startsWith('Bearer ')) return ''
+  return auth.slice('Bearer '.length)
+}
+
+function pruneExpiredSessions() {
+  const now = Date.now()
+
+  for (const [token, session] of sessions.entries()) {
+    if (now > session.expiresAt) {
+      sessions.delete(token)
+    }
+  }
+}
+
+function getSession(req) {
+  pruneExpiredSessions()
+
+  const token = getBearerToken(req)
+  if (!token) return null
+
+  const session = sessions.get(token)
+  if (!session) return null
+
+  if (Date.now() > session.expiresAt) {
+    sessions.delete(token)
+    return null
+  }
+
+  return session
+}
+
+function enforceRateLimit(bucket, req, limit, windowMs) {
+  const key = `${bucket}:${getClientIp(req)}`
+  const now = Date.now()
+  const existing = rateLimitStore.get(key)
+
+  if (!existing || now > existing.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs })
+    return
+  }
+
+  if (existing.count >= limit) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000))
+    throw makeHttpError(429, 'Too many requests. Please try again later.', {
+      'Retry-After': String(retryAfterSeconds),
+    })
+  }
+
+  existing.count += 1
+}
+
+async function appendAuthLog(entry) {
+  const currentLogs = await readJsonFile(AUTH_LOG_FILE, [])
+  const nextLogs = Array.isArray(currentLogs) ? currentLogs : []
+  nextLogs.push(sanitizeAuthLogEntry(entry))
+  await writeJsonFile(AUTH_LOG_FILE, nextLogs.slice(-500))
+}
+
+function validateContactForm(body) {
+  const form = {
+    fullName: sanitizeSingleLine(body.fullName, 120),
+    email: sanitizeEmail(body.email),
+    subject: sanitizeSingleLine(body.subject, 160),
+    message: sanitizeMultiline(body.message, 2000),
+  }
+
+  if (!form.fullName) throw makeHttpError(400, 'Full name is required.')
+  if (!isValidEmail(form.email)) throw makeHttpError(400, 'Valid email is required.')
+  if (!form.subject) throw makeHttpError(400, 'Subject is required.')
+  if (!form.message) throw makeHttpError(400, 'Message is required.')
+
+  return form
+}
+
+function validateInquiryForm(body) {
+  const productInterested = sanitizeSingleLine(body.productInterested, 120)
+  const form = {
+    fullName: sanitizeSingleLine(body.fullName, 120),
+    mobile: sanitizePhone(body.mobile),
+    email: sanitizeEmail(body.email),
+    location: sanitizeSingleLine(body.location, 120),
+    productInterested,
+    message: sanitizeMultiline(body.message, 2000),
+    consent: sanitizeBoolean(body.consent),
+  }
+
+  if (!form.fullName) throw makeHttpError(400, 'Full name is required.')
+  if (!isValidPhone(form.mobile)) throw makeHttpError(400, 'Valid mobile number is required.')
+  if (!isValidEmail(form.email)) throw makeHttpError(400, 'Valid email is required.')
+  if (!form.location) throw makeHttpError(400, 'Location is required.')
+  if (!form.productInterested) throw makeHttpError(400, 'Product interest is required.')
+  if (!PRODUCT_OPTIONS.has(form.productInterested)) {
+    throw makeHttpError(400, 'Select a valid product.')
+  }
+  if (!form.consent) throw makeHttpError(400, 'Consent is required.')
+
+  return form
+}
+
+function validateForeclosedPropertyForm(body) {
+  const form = {
+    fullName: sanitizeSingleLine(body.fullName, 120),
+    mobile: sanitizePhone(body.mobile),
+    email: sanitizeEmail(body.email),
+    propertyInterested: sanitizeSingleLine(body.propertyInterested, 200),
+    message: sanitizeMultiline(body.message, 2000),
+    consent: sanitizeBoolean(body.consent),
+  }
+
+  if (!form.fullName) throw makeHttpError(400, 'Full name is required.')
+  if (!isValidPhone(form.mobile)) throw makeHttpError(400, 'Valid mobile number is required.')
+  if (!isValidEmail(form.email)) throw makeHttpError(400, 'Valid email is required.')
+  if (!form.propertyInterested) throw makeHttpError(400, 'Property reference is required.')
+  if (!form.consent) throw makeHttpError(400, 'Consent is required.')
+
+  return form
+}
+
+function validateApplicationForm(body) {
+  const form = {
+    fullName: sanitizeSingleLine(body.fullName, 120),
+    email: sanitizeEmail(body.email),
+    mobile: sanitizePhone(body.mobile),
+    idType: sanitizeSingleLine(body.idType, 80),
+    idNumber: sanitizeSingleLine(body.idNumber, 80),
+    propertyType: sanitizeSingleLine(body.propertyType, 120),
+    propertyLocation: sanitizeSingleLine(body.propertyLocation, 160),
+    propertyPrice: parseMoney(body.propertyPrice),
+    loanAmount: parseMoney(body.loanAmount),
+    loanPurpose: sanitizeSingleLine(body.loanPurpose, 160),
+    loanTerm: parseWholeNumber(body.loanTerm),
+    productInterested: sanitizeSingleLine(body.productInterested, 120),
+    employmentStatus: sanitizeSingleLine(body.employmentStatus, 120),
+    employer: sanitizeSingleLine(body.employer, 160),
+    position: sanitizeSingleLine(body.position, 160),
+    monthlyIncome: parseMoney(body.monthlyIncome),
+    consent: sanitizeBoolean(body.consent),
+  }
+
+  if (!form.fullName) throw makeHttpError(400, 'Full name is required.')
+  if (!isValidPhone(form.mobile)) throw makeHttpError(400, 'Valid mobile number is required.')
+  if (!isValidEmail(form.email)) throw makeHttpError(400, 'Valid email is required.')
+  if (!form.propertyType) throw makeHttpError(400, 'Property type is required.')
+  if (!form.propertyLocation) throw makeHttpError(400, 'Property location is required.')
+  if (form.propertyPrice <= 0) throw makeHttpError(400, 'Valid property price is required.')
+  if (form.loanAmount <= 0) throw makeHttpError(400, 'Valid loan amount is required.')
+  if (!form.loanPurpose) throw makeHttpError(400, 'Loan purpose is required.')
+  if (form.loanTerm <= 0 || form.loanTerm > 150) throw makeHttpError(400, 'Loan term must be between 1 and 150 months.')
+  if (!form.productInterested) throw makeHttpError(400, 'Product selection is required.')
+  if (!form.employmentStatus) throw makeHttpError(400, 'Employment status is required.')
+  if (form.monthlyIncome <= 0) throw makeHttpError(400, 'Valid monthly income is required.')
+  if (!form.consent) throw makeHttpError(400, 'Consent is required.')
+
+  return form
+}
+
+async function handleEmailResponse(req, res, pathname, sendResult, confirmationPayload) {
+  if (!sendResult.success) {
+    throw makeHttpError(502, sendResult.message || 'Unable to send email right now.')
+  }
+
+  if (confirmationPayload?.email) {
+    await sendUserConfirmationEmail(
+      confirmationPayload.email,
+      confirmationPayload.type,
+      confirmationPayload.fullName,
+    )
+  }
+
+  return sendJson(req, res, 200, { success: true, message: sendResult.message }, pathname)
 }
 
 async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`)
   const pathname = url.pathname
 
+  assertCorsAllowed(req)
+
   if (req.method === 'OPTIONS') {
-    return sendJson(res, 200, { ok: true })
+    return sendJson(req, res, 200, { ok: true }, pathname)
   }
 
   if (req.method === 'GET' && pathname === '/api/health') {
-    return sendJson(res, 200, { status: 'ok' })
+    return sendJson(req, res, 200, {
+      status: 'ok',
+      environment: NODE_ENV,
+      corsMode: ALLOWED_ORIGINS.size > 0 ? 'configured-or-same-origin' : 'same-origin-only',
+      storage: 'file',
+    }, pathname)
   }
 
   if (req.method === 'GET' && pathname === '/api/properties') {
     const properties = await readJsonFile(PROPERTIES_FILE, [])
-    return sendJson(res, 200, { items: properties })
+    return sendJson(req, res, 200, { items: Array.isArray(properties) ? properties : [] }, pathname)
   }
 
   if (req.method === 'POST' && pathname === '/api/admin/login') {
+    enforceRateLimit('admin-login', req, LOGIN_RATE_LIMIT_MAX, LOGIN_RATE_LIMIT_WINDOW_MS)
+
     const body = await parseBody(req)
-    const username = String(body.username || '').trim()
+    const username = sanitizeSingleLine(body.username, 254).toLowerCase()
     const password = String(body.password || '')
 
     if (!username || !password) {
-      return sendJson(res, 400, { message: 'Username and password are required.' })
+      return sendJson(req, res, 400, { message: 'Username and password are required.' }, pathname)
     }
 
     const users = await readJsonFile(ADMIN_USERS_FILE, [])
-    const user = users.find((item) => item.username === username)
+    const user = Array.isArray(users)
+      ? users.find((item) => item.username === username)
+      : null
     const success = user ? verifyPassword(password, user.salt, user.hash) : false
 
     await appendAuthLog({
       timestamp: new Date().toISOString(),
       username,
       success,
-      ip: req.socket.remoteAddress || '',
+      ip: getClientIp(req),
       userAgent: req.headers['user-agent'] || '',
     })
 
     if (!success) {
-      return sendJson(res, 401, { message: 'Invalid credentials.' })
+      return sendJson(req, res, 401, { message: 'Invalid credentials.' }, pathname)
     }
 
     const token = randomBytes(24).toString('hex')
@@ -226,118 +666,152 @@ async function handleRequest(req, res) {
       expiresAt: Date.now() + SESSION_TTL_MS,
     })
 
-    return sendJson(res, 200, { token, username, expiresInMs: SESSION_TTL_MS })
+    return sendJson(req, res, 200, { token, username, expiresInMs: SESSION_TTL_MS }, pathname)
   }
 
   if (req.method === 'GET' && pathname === '/api/admin/auth-logs') {
     const session = getSession(req)
-    if (!session) return sendJson(res, 401, { message: 'Unauthorized' })
+    if (!session) return sendJson(req, res, 401, { message: 'Unauthorized' }, pathname)
+
     const logs = await readJsonFile(AUTH_LOG_FILE, [])
-    return sendJson(res, 200, { items: logs.slice().reverse() })
+    const items = Array.isArray(logs) ? logs.slice().reverse() : []
+    return sendJson(req, res, 200, { items }, pathname)
   }
 
   if (pathname.startsWith('/api/admin/properties')) {
     const session = getSession(req)
-    if (!session) return sendJson(res, 401, { message: 'Unauthorized' })
+    if (!session) return sendJson(req, res, 401, { message: 'Unauthorized' }, pathname)
 
     if (req.method === 'GET' && pathname === '/api/admin/properties') {
       const properties = await readJsonFile(PROPERTIES_FILE, [])
-      return sendJson(res, 200, { items: properties })
+      return sendJson(req, res, 200, { items: Array.isArray(properties) ? properties : [] }, pathname)
     }
 
     if (req.method === 'POST' && pathname === '/api/admin/properties') {
+      enforceRateLimit('admin-property-write', req, ADMIN_MUTATION_RATE_LIMIT_MAX, ADMIN_MUTATION_RATE_LIMIT_WINDOW_MS)
+
       const body = await parseBody(req)
       const property = sanitizeProperty(body)
       const validationError = validateProperty(property)
-      if (validationError) return sendJson(res, 400, { message: validationError })
+      if (validationError) return sendJson(req, res, 400, { message: validationError }, pathname)
 
       const properties = await readJsonFile(PROPERTIES_FILE, [])
-      properties.push(property)
-      await writeJsonFile(PROPERTIES_FILE, properties)
-      return sendJson(res, 201, { item: property })
+      const nextProperties = Array.isArray(properties) ? properties : []
+      nextProperties.push(property)
+      await writeJsonFile(PROPERTIES_FILE, nextProperties)
+
+      return sendJson(req, res, 201, { item: property }, pathname)
     }
 
     const idMatch = pathname.match(/^\/api\/admin\/properties\/(\d+)$/)
-    if (!idMatch) return sendJson(res, 404, { message: 'Not found' })
+    if (!idMatch) return sendJson(req, res, 404, { message: 'Not found' }, pathname)
 
     const id = Number(idMatch[1])
     const properties = await readJsonFile(PROPERTIES_FILE, [])
-    const index = properties.findIndex((item) => item.id === id)
-    if (index === -1) return sendJson(res, 404, { message: 'Property not found' })
+    const nextProperties = Array.isArray(properties) ? properties : []
+    const index = nextProperties.findIndex((item) => item.id === id)
+    if (index === -1) return sendJson(req, res, 404, { message: 'Property not found' }, pathname)
 
     if (req.method === 'PUT') {
+      enforceRateLimit('admin-property-write', req, ADMIN_MUTATION_RATE_LIMIT_MAX, ADMIN_MUTATION_RATE_LIMIT_WINDOW_MS)
+
       const body = await parseBody(req)
-      const updated = sanitizeProperty(body, properties[index])
+      const updated = sanitizeProperty(body, nextProperties[index])
       const validationError = validateProperty(updated)
-      if (validationError) return sendJson(res, 400, { message: validationError })
-      properties[index] = updated
-      await writeJsonFile(PROPERTIES_FILE, properties)
-      return sendJson(res, 200, { item: updated })
+      if (validationError) return sendJson(req, res, 400, { message: validationError }, pathname)
+
+      nextProperties[index] = updated
+      await writeJsonFile(PROPERTIES_FILE, nextProperties)
+      return sendJson(req, res, 200, { item: updated }, pathname)
     }
 
     if (req.method === 'DELETE') {
-      const [removed] = properties.splice(index, 1)
-      await writeJsonFile(PROPERTIES_FILE, properties)
-      return sendJson(res, 200, { item: removed })
+      enforceRateLimit('admin-property-write', req, ADMIN_MUTATION_RATE_LIMIT_MAX, ADMIN_MUTATION_RATE_LIMIT_WINDOW_MS)
+
+      const [removed] = nextProperties.splice(index, 1)
+      await writeJsonFile(PROPERTIES_FILE, nextProperties)
+      return sendJson(req, res, 200, { item: removed }, pathname)
     }
   }
 
-  // Email endpoints
   if (req.method === 'POST' && pathname === '/api/send-application-email') {
-    const body = await parseBody(req)
+    enforceRateLimit('application-form', req, FORM_RATE_LIMIT_MAX, FORM_RATE_LIMIT_WINDOW_MS)
+
+    const form = validateApplicationForm(await parseBody(req))
     const formsEmail = process.env.FORMS_EMAIL || 'admin@afcsme.com'
+    const result = await sendApplicationEmail(form, formsEmail)
 
-    const result = await sendApplicationEmail(body, formsEmail)
-    await sendUserConfirmationEmail(body.email, 'application', body.fullName)
-
-    return sendJson(res, 200, result)
+    return handleEmailResponse(req, res, pathname, result, {
+      email: form.email,
+      fullName: form.fullName,
+      type: 'application',
+    })
   }
 
   if (req.method === 'POST' && pathname === '/api/send-contact-email') {
-    const body = await parseBody(req)
+    enforceRateLimit('contact-form', req, FORM_RATE_LIMIT_MAX, FORM_RATE_LIMIT_WINDOW_MS)
+
+    const form = validateContactForm(await parseBody(req))
     const formsEmail = process.env.FORMS_EMAIL || 'admin@afcsme.com'
+    const result = await sendContactEmail(form, formsEmail)
 
-    const result = await sendContactEmail(body, formsEmail)
-    await sendUserConfirmationEmail(body.email, 'contact', body.fullName)
-
-    return sendJson(res, 200, result)
+    return handleEmailResponse(req, res, pathname, result, {
+      email: form.email,
+      fullName: form.fullName,
+      type: 'contact',
+    })
   }
 
   if (req.method === 'POST' && pathname === '/api/send-inquiry-email') {
-    const body = await parseBody(req)
+    enforceRateLimit('inquiry-form', req, FORM_RATE_LIMIT_MAX, FORM_RATE_LIMIT_WINDOW_MS)
+
+    const form = validateInquiryForm(await parseBody(req))
     const inquiriesEmail = process.env.INQUIRIES_EMAIL || 'inquiries@afcsme.com'
+    const result = await sendInquiryEmail(form, inquiriesEmail)
 
-    const result = await sendInquiryEmail(body, inquiriesEmail)
-    await sendUserConfirmationEmail(body.email, 'inquiry', body.fullName)
-
-    return sendJson(res, 200, result)
+    return handleEmailResponse(req, res, pathname, result, {
+      email: form.email,
+      fullName: form.fullName,
+      type: 'inquiry',
+    })
   }
 
   if (req.method === 'POST' && pathname === '/api/send-foreclosed-property-email') {
-    const body = await parseBody(req)
+    enforceRateLimit('foreclosed-form', req, FORM_RATE_LIMIT_MAX, FORM_RATE_LIMIT_WINDOW_MS)
+
+    const form = validateForeclosedPropertyForm(await parseBody(req))
     const foreclosedEmail = process.env.FORECLOSED_PROPERTIES_EMAIL || 'josephleo.flores@afcsme.com.ph'
+    const result = await sendForeclosedPropertyEmail(form, foreclosedEmail)
 
-    const result = await sendForeclosedPropertyEmail(body, foreclosedEmail)
-    await sendUserConfirmationEmail(body.email, 'foreclosed-property', body.fullName)
-
-    return sendJson(res, 200, result)
+    return handleEmailResponse(req, res, pathname, result, {
+      email: form.email,
+      fullName: form.fullName,
+      type: 'foreclosed-property',
+    })
   }
 
-  return sendJson(res, 404, { message: 'Route not found' })
+  return sendJson(req, res, 404, { message: 'Route not found' }, pathname)
 }
 
 async function start() {
   await bootstrapData()
+
   const server = createServer((req, res) => {
     handleRequest(req, res).catch((error) => {
       console.error(error)
+      const url = new URL(req.url, `http://${req.headers.host}`)
       const statusCode = Number(error.statusCode) || 500
-      sendJson(res, statusCode, { message: statusCode === 500 ? 'Server error' : error.message })
+      const message = statusCode === 500 ? 'Server error' : error.message
+      sendJson(req, res, statusCode, { message }, url.pathname, error.headers || {})
     })
   })
+
   server.listen(PORT, () => {
     console.log(`Backend API running on http://localhost:${PORT}`)
   })
 }
 
-start()
+start().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})

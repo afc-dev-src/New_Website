@@ -8,9 +8,9 @@ const filterOptions = [
 ]
 
 const scheduleHighlights = [
-  { label: 'Regular Hours', value: '9:00 AM - 4:30 PM' },
+  { label: 'Hours', value: '9:00 AM - 4:30 PM' },
   { label: 'Check-Clearing', value: '2:30 PM cut-off' },
-  { label: 'Availability', value: 'Subject to branch advisories' },
+  { label: 'Advisory', value: 'Subject to branch advisories' },
 ]
 
 function SearchIcon({ className = '' }) {
@@ -176,45 +176,42 @@ export default function BranchesSection({ compact = false, sectionId = 'branches
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[18px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-4 md:min-h-[104px]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">Available Offices</p>
-              <p className="mt-2 text-lg font-bold text-[#1a1f4e]">{branchCountLabel}</p>
-              <p className="mt-1 text-xs leading-relaxed text-[#1a1f4e]/60">Browse every office currently matched by your search and filter.</p>
+            <div className="rounded-[18px] border border-[#e4e9fb] bg-[linear-gradient(180deg,#fbfcff_0%,#f4f8ff_100%)] px-4 py-3.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/50">Showing</p>
+              <p className="mt-2 text-2xl font-bold leading-none text-[#1a1f4e]">{filteredBranches.length}</p>
+              <p className="mt-2 text-xs font-medium text-[#1a1f4e]/62">{selectedFilterLabel}</p>
             </div>
-            <div className="rounded-[18px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-4 md:min-h-[104px]">
+            <div className="rounded-[18px] border border-[#e4e9fb] bg-[linear-gradient(180deg,#fbfcff_0%,#f4f8ff_100%)] px-4 py-3.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">Head Office</p>
-              <p className="mt-2 text-lg font-bold text-[#1a1f4e]">{headOfficeCount}</p>
-              <p className="mt-1 text-xs leading-relaxed text-[#1a1f4e]/60">Main support hub for central coordination and servicing.</p>
+              <p className="mt-2 text-2xl font-bold leading-none text-[#1a1f4e]">{headOfficeCount}</p>
+              <p className="mt-2 text-xs font-medium text-[#1a1f4e]/62">Main support hub</p>
             </div>
-            <div className="rounded-[18px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-4 md:min-h-[104px]">
+            <div className="rounded-[18px] border border-[#e4e9fb] bg-[linear-gradient(180deg,#fbfcff_0%,#f4f8ff_100%)] px-4 py-3.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">Branch Offices</p>
-              <p className="mt-2 text-lg font-bold text-[#1a1f4e]">{branchOfficeCount}</p>
-              <p className="mt-1 text-xs leading-relaxed text-[#1a1f4e]/60">Regional offices available for nearby inquiries and visits.</p>
+              <p className="mt-2 text-2xl font-bold leading-none text-[#1a1f4e]">{branchOfficeCount}</p>
+              <p className="mt-2 text-xs font-medium text-[#1a1f4e]/62">Regional network</p>
             </div>
-            <div className="rounded-[18px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-4 md:min-h-[104px]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">Service Window</p>
-              <p className="mt-2 text-lg font-bold text-[#1a1f4e]">9:00 AM - 4:30 PM</p>
-              <p className="mt-1 text-xs leading-relaxed text-[#1a1f4e]/60">Standard office hours for branch assistance and walk-in visits.</p>
+            <div className="rounded-[18px] border border-[#e4e9fb] bg-[linear-gradient(180deg,#fbfcff_0%,#f4f8ff_100%)] px-4 py-3.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">Office Hours</p>
+              <p className="mt-2 text-lg font-bold leading-tight text-[#1a1f4e]">9:00 AM - 4:30 PM</p>
+              <p className="mt-2 text-xs font-medium text-[#1a1f4e]/62">Monday to Friday</p>
             </div>
           </div>
 
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div className="mt-3 flex flex-wrap gap-2.5">
             {scheduleHighlights.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[18px] border border-[#e4e9fb] bg-[linear-gradient(180deg,#f9fbff_0%,#f2f6ff_100%)] px-4 py-4"
+                className="inline-flex items-center gap-2 rounded-full border border-[#dfe6f8] bg-[#f9fbff] px-3.5 py-2 text-xs text-[#1a1f4e]/72"
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1a1f4e]/55">
-                  {item.label}
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-relaxed text-[#1a1f4e]">{item.value}</p>
+                <span className="font-semibold uppercase tracking-[0.16em] text-[#1a1f4e]/50">{item.label}</span>
+                <span className="font-semibold text-[#1a1f4e]">{item.value}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-3 rounded-[18px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-3 text-sm leading-relaxed text-[#1a1f4e]/68">
-            For a smoother visit, we recommend calling the selected branch first to confirm availability, support hours,
-            and any branch-specific advisory before traveling.
+          <div className="mt-3 rounded-[16px] border border-[#e4e9fb] bg-[#f9fbff] px-4 py-2.5 text-sm text-[#1a1f4e]/68">
+            Call the selected branch first to confirm support hours and any office-specific advisory before visiting.
           </div>
         </div>
 
